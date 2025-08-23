@@ -15,9 +15,9 @@ export const signInSchema = z.object({
 // Profile schemas
 export const profileUpdateSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters').optional(),
-  avatarUrl: z.string().url('Invalid avatar URL').optional().nullable(),
+  avatarUrl: z.string().url('Invalid avatar URL').nullable().optional(),
   timezone: z.string().optional(),
-  settings: z.record(z.any()).optional(),
+  settings: z.object({}).catchall(z.any()).optional(),
 })
 
 // Apartment schemas
@@ -41,7 +41,7 @@ export const apartmentCreateSchema = z.object({
     }).optional(),
     door: z.string().optional(),
     mailbox: z.string().optional(),
-    additional: z.record(z.string()).optional(),
+    additional: z.object({}).catchall(z.string()).optional(),
   }).optional(),
 })
 
@@ -78,7 +78,7 @@ export const reservationCreateSchema = z.object({
   platformFee: z.number().min(0, 'Platform fee cannot be negative').optional(),
   currency: z.string().length(3, 'Currency must be 3 characters').default('USD'),
   notes: z.string().optional(),
-  contactInfo: z.record(z.any()).optional(),
+  contactInfo: z.object({}).catchall(z.any()).optional(),
 }).refine(
   (data) => new Date(data.checkOut) > new Date(data.checkIn),
   {
@@ -107,7 +107,7 @@ export const cleaningCreateSchema = z.object({
   scheduledDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid scheduled date'),
   duration: z.string().optional().nullable(), // PostgreSQL interval format
   instructions: z.string().optional(),
-  supplies: z.record(z.any()).optional(),
+  supplies: z.object({}).catchall(z.any()).optional(),
 })
 
 export const cleaningUpdateSchema = cleaningCreateSchema.partial().omit({ apartmentId: true })

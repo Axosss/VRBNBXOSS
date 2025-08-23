@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import bcrypt from "bcryptjs"
+import { z } from "zod"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -26,6 +27,25 @@ export function createErrorResponse(error: unknown, defaultMessage: string = 'An
       success: false,
       error: error.message,
       statusCode: error.statusCode,
+    }
+  }
+
+  if (error instanceof z.ZodError) {
+    // In Zod v4, error details are in the message as JSON string
+    let message = 'Validation error'
+    try {
+      const errorData = JSON.parse(error.message)
+      if (Array.isArray(errorData) && errorData.length > 0) {
+        message = errorData[0].message || 'Validation error'
+      }
+    } catch {
+      // If JSON parsing fails, use the raw message
+      message = error.message
+    }
+    return {
+      success: false,
+      error: message,
+      statusCode: 400,
     }
   }
 
@@ -156,7 +176,7 @@ export function generateStoragePath(userId: string, category: string, filename: 
 
 // Validation utilities
 export function isValidUUID(uuid: string): boolean {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return uuidRegex.test(uuid)
 }
 

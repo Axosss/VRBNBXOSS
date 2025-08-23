@@ -63,13 +63,6 @@ export async function GET(request: NextRequest) {
     )
     
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        createErrorResponse(new AppError(error.errors[0].message, 400)),
-        { status: 400 }
-      )
-    }
-    
     const errorResponse = createErrorResponse(error)
     return NextResponse.json(errorResponse, { 
       status: errorResponse.statusCode 
@@ -124,13 +117,6 @@ export async function POST(request: NextRequest) {
     )
     
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        createErrorResponse(new AppError(error.errors[0].message, 400)),
-        { status: 400 }
-      )
-    }
-    
     const errorResponse = createErrorResponse(error)
     return NextResponse.json(errorResponse, { 
       status: errorResponse.statusCode 

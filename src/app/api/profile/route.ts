@@ -70,6 +70,9 @@ export async function PUT(request: NextRequest) {
     if (updates.timezone !== undefined) updateData.timezone = updates.timezone
     if (updates.settings !== undefined) updateData.settings = updates.settings
     
+    // Add updated_at timestamp
+    updateData.updated_at = new Date().toISOString()
+    
     // Update profile
     const { data: profile, error: updateError } = await supabase
       .from('profiles')
@@ -99,13 +102,6 @@ export async function PUT(request: NextRequest) {
     )
     
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        createErrorResponse(new AppError(error.errors[0].message, 400)),
-        { status: 400 }
-      )
-    }
-    
     const errorResponse = createErrorResponse(error)
     return NextResponse.json(errorResponse, { 
       status: errorResponse.statusCode 
