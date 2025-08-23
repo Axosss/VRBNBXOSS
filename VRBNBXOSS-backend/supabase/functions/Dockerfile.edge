@@ -1,0 +1,30 @@
+# Supabase Edge Functions Container
+# For local development and testing of Edge Functions
+
+FROM denoland/deno:1.40.5
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd --system --gid 1001 deno && \
+    useradd --system --uid 1001 --gid deno deno
+
+# Copy function files
+COPY . .
+
+# Set correct permissions
+RUN chown -R deno:deno /app
+
+# Switch to non-root user
+USER deno
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD deno eval "const response = await fetch('http://localhost:8000/health'); if (response.status !== 200) throw new Error('Health check failed')"
+
+# Start Edge Functions server
+CMD ["deno", "run", "--allow-all", "serve.ts"]

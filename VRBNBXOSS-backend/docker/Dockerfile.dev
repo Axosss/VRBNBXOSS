@@ -1,0 +1,46 @@
+# Development Dockerfile for VRBNBXOSS Backend
+# Optimized for fast development cycles and debugging
+
+FROM node:18-alpine AS development
+
+# Install system dependencies including development tools
+RUN apk add --no-cache \
+    libc6-compat \
+    curl \
+    git \
+    openssh \
+    && addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+WORKDIR /app
+
+# Install global development tools
+RUN npm install -g nodemon @supabase/cli
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install all dependencies (including devDependencies)
+RUN npm install
+
+# Create directories for development
+RUN mkdir -p /app/logs && chown -R nextjs:nodejs /app
+
+# Set development environment
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Expose ports (3000 for Next.js, 54323 for Supabase)
+EXPOSE 3000 54323
+
+# Switch to non-root user
+USER nextjs
+
+# Development health check (lighter)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=2 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Start development server
+CMD ["npm", "run", "dev"]

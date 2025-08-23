@@ -1,0 +1,199 @@
+# Docker Compose for VRBNBXOSS Backend Local Development
+# Includes Next.js app, PostgreSQL, Redis, and Supabase services
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Next.js Application (API Routes)
+  # ===========================================
+  app:
+    build:
+      context: ../
+      dockerfile: ./forkcast-backend/docker/Dockerfile.dev
+    container_name: vrbnbxoss-backend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Hot reloading for development
+      - ../:/app
+      - /app/node_modules  # Prevent node_modules override
+      - /app/.next         # Prevent .next override
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/vrbnbxoss_dev
+      - REDIS_URL=redis://redis:6379
+      - APP_ENCRYPTION_KEY=${APP_ENCRYPTION_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      supabase:
+        condition: service_healthy
+    networks:
+      - vrbnbxoss-network
+    restart: unless-stopped
+
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  db:
+    image: postgres:15-alpine
+    container_name: vrbnbxoss-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=vrbnbxoss_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vrbnbxoss_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - vrbnbxoss-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Redis Cache
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: vrbnbxoss-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    networks:
+      - vrbnbxoss-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Supabase Local Development Stack
+  # ===========================================
+  supabase:
+    image: supabase/supabase:latest
+    container_name: vrbnbxoss-supabase
+    ports:
+      - "54321:54321"  # API Gateway
+      - "54323:54323"  # Database
+      - "54324:54324"  # Auth
+      - "54325:54325"  # Storage
+      - "54326:54326"  # Edge Functions
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - ANON_KEY=${SUPABASE_ANON_KEY}
+      - SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_PUBLIC_URL=http://localhost:54321
+    volumes:
+      - supabase_data:/var/lib/supabase
+      - ../supabase:/supabase:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:54321/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - vrbnbxoss-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Mailhog (Email Testing)
+  # ===========================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: vrbnbxoss-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - vrbnbxoss-network
+    restart: unless-stopped
+
+  # ===========================================
+  # MinIO (S3-compatible storage for testing)
+  # ===========================================
+  minio:
+    image: minio/minio:latest
+    container_name: vrbnbxoss-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 30s
+    networks:
+      - vrbnbxoss-network
+    restart: unless-stopped
+
+  # ===========================================
+  # Adminer (Database Management UI)
+  # ===========================================
+  adminer:
+    image: adminer:latest
+    container_name: vrbnbxoss-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=db
+    networks:
+      - vrbnbxoss-network
+    restart: unless-stopped
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  vrbnbxoss-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  supabase_data:
+    driver: local
+  minio_data:
+    driver: local

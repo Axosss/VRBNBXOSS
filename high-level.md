@@ -141,7 +141,7 @@ Look for the files included to get inspirations they are not complete, but they 
 
 ## Extra in a v2.0 
 The website needs to have an :
-- owner section with auth (using firebase or a intern password),
+- owner section with auth 
 - a renter section,
 - a showcase section
 
