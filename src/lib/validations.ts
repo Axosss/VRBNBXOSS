@@ -15,7 +15,11 @@ export const signInSchema = z.object({
 // Profile schemas
 export const profileUpdateSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters').optional(),
-  avatarUrl: z.string().url('Invalid avatar URL').nullable().optional(),
+  avatarUrl: z.union([
+    z.string().url('Invalid avatar URL'),
+    z.literal(''),
+    z.null()
+  ]).optional(),
   timezone: z.string().optional(),
   settings: z.object({}).catchall(z.any()).optional(),
 })
