@@ -50,10 +50,10 @@ export const createMockSupabaseClient = () => {
 
 // Test data factories
 export const createTestUser = (overrides = {}) => ({
-  id: 'test-user-id',
-  email: 'test@example.com',
+  id: 'TEST-USER-ID-FAKE',
+  email: 'test-user-fake@example-not-real.com',
   user_metadata: {
-    full_name: 'Test User',
+    full_name: 'TEST USER FAKE',
   },
   ...overrides,
 })
@@ -87,8 +87,8 @@ export const createTestApartment = (overrides = {}) => ({
   amenities: ['wifi', 'kitchen'],
   photos: [],
   access_codes: {
-    wifi: { network: 'TestNet', password: 'testpass' },
-    door: '1234',
+    wifi: { network: 'TEST-NETWORK-FAKE', password: 'TEST-PASSWORD-NOT-REAL' },
+    door: 'TEST-CODE-0000',
   },
   status: 'active',
   created_at: new Date().toISOString(),
@@ -97,11 +97,11 @@ export const createTestApartment = (overrides = {}) => ({
 })
 
 export const createTestGuest = (overrides = {}) => ({
-  id: 'test-guest-id',
-  owner_id: 'test-user-id',
-  name: 'Test Guest',
-  email: 'guest@example.com',
-  phone: '+1234567890',
+  id: 'TEST-GUEST-ID-FAKE',
+  owner_id: 'TEST-USER-ID-FAKE',
+  name: 'TEST GUEST FAKE',
+  email: 'guest-fake@example-not-real.com',
+  phone: '+1-000-000-0000',
   id_document: null,
   address: {
     street: '456 Guest St',
