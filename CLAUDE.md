@@ -1,5 +1,4 @@
 # CLAUDE.md
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -11,6 +10,7 @@ VRBNBXOSS is a comprehensive rental property management dashboard for property o
 - **Hosting**: Vercel for frontend, containerized backend with Docker
 - **Real-time**: Supabase Realtime for live updates
 - **Database**: PostgreSQL with Row Level Security (RLS)
+
 
 ## Key Commands
 
@@ -108,16 +108,257 @@ All tables implement RLS policies ensuring users only access their own data. Key
 ## Development Workflow
 
 ### Project Structure
+src/
+├── app/                      # Next.js App Router
+│   ├── (auth)/              # Authentication routes group
+│   │   ├── login/
+│   │   │   ├── page.tsx
+│   │   │   └── layout.tsx
+│   │   ├── register/
+│   │   │   └── page.tsx
+│   │   ├── forgot-password/
+│   │   │   └── page.tsx
+│   │   └── layout.tsx       # Auth layout wrapper
+│   │
+│   ├── (dashboard)/         # Protected dashboard routes
+│   │   ├── layout.tsx       # Dashboard layout with sidebar
+│   │   ├── page.tsx         # Dashboard home
+│   │   ├── calendar/
+│   │   │   ├── page.tsx
+│   │   │   └── components/
+│   │   ├── reservations/
+│   │   │   ├── page.tsx
+│   │   │   ├── [id]/
+│   │   │   │   └── page.tsx
+│   │   │   └── new/
+│   │   │       └── page.tsx
+│   │   ├── apartments/
+│   │   │   ├── page.tsx
+│   │   │   ├── [id]/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── edit/
+│   │   │   └── new/
+│   │   ├── cleaning/
+│   │   │   ├── page.tsx
+│   │   │   └── schedule/
+│   │   ├── guests/
+│   │   │   ├── page.tsx
+│   │   │   └── [id]/
+│   │   ├── statistics/
+│   │   │   ├── page.tsx
+│   │   │   └── reports/
+│   │   └── settings/
+│   │       ├── page.tsx
+│   │       ├── profile/
+│   │       ├── billing/
+│   │       └── integrations/
+│   │
+│   ├── (public)/            # Public routes
+│   │   ├── guest-portal/
+│   │   │   └── [token]/
+│   │   │       └── page.tsx
+│   │   └── layout.tsx
+│   │
+│   ├── api/                 # API Routes
+│   │   ├── auth/
+│   │   │   ├── callback/
+│   │   │   └── logout/
+│   │   ├── reservations/
+│   │   ├── apartments/
+│   │   ├── cleaning/
+│   │   ├── webhooks/
+│   │   │   ├── stripe/
+│   │   │   └── calendar-sync/
+│   │   └── cron/
+│   │       ├── daily-sync/
+│   │       └── send-reminders/
+│   │
+│   ├── layout.tsx           # Root layout
+│   ├── globals.css         # Global styles
+│   └── providers.tsx       # Client providers wrapper
+│
+├── components/
+│   ├── ui/                  # shadcn/ui components
+│   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── dialog.tsx
+│   │   ├── form.tsx
+│   │   ├── input.tsx
+│   │   ├── select.tsx
+│   │   ├── table.tsx
+│   │   └── ...
+│   │
+│   ├── layout/              # Layout components
+│   │   ├── header.tsx
+│   │   ├── sidebar.tsx
+│   │   ├── mobile-nav.tsx
+│   │   └── footer.tsx
+│   │
+│   ├── calendar/            # Calendar components
+│   │   ├── calendar-view.tsx
+│   │   ├── reservation-card.tsx
+│   │   ├── cleaning-block.tsx
+│   │   └── availability-indicator.tsx
+│   │
+│   ├── forms/               # Form components
+│   │   ├── reservation-form.tsx
+│   │   ├── apartment-form.tsx
+│   │   ├── guest-form.tsx
+│   │   └── cleaning-form.tsx
+│   │
+│   ├── charts/              # Chart components
+│   │   ├── revenue-chart.tsx
+│   │   ├── occupancy-chart.tsx
+│   │   └── platform-breakdown.tsx
+│   │
+│   └── shared/              # Shared components
+│       ├── data-table.tsx
+│       ├── loading-spinner.tsx
+│       ├── error-boundary.tsx
+│       └── empty-state.tsx
+│
+├── lib/
+│   ├── supabase/            # Supabase client and utilities
+│   │   ├── client.ts        # Browser client
+│   │   ├── server.ts        # Server client
+│   │   ├── middleware.ts    # Auth middleware
+│   │   └── types.ts         # Generated types
+│   │
+│   ├── api/                 # API utilities
+│   │   ├── reservations.ts
+│   │   ├── apartments.ts
+│   │   ├── cleaning.ts
+│   │   └── statistics.ts
+│   │
+│   ├── hooks/               # Custom React hooks
+│   │   ├── use-auth.ts
+│   │   ├── use-reservations.ts
+│   │   ├── use-apartments.ts
+│   │   └── use-realtime.ts
+│   │
+│   ├── utils/               # Utility functions
+│   │   ├── dates.ts
+│   │   ├── currency.ts
+│   │   ├── validation.ts
+│   │   └── constants.ts
+│   │
+│   └── store/               # Zustand stores
+│       ├── auth-store.ts
+│       ├── ui-store.ts
+│       └── filter-store.ts
+│
+├── styles/
+│   ├── globals.css          # Global styles and Tailwind
+│   └── themes/              # Theme configurations
+│
+├── types/                   # TypeScript type definitions
+│   ├── index.ts
+│   ├── apartment.ts
+│   ├── reservation.ts
+│   ├── guest.ts
+│   └── cleaning.ts
+│
+├── public/                  # Static assets
+│   ├── images/
+│   ├── icons/
+│   └── fonts/
+│
+└── tests/                   # Test files
+    ├── unit/
+    ├── integration/
+    └── e2e/
 ```
-VRBNBXOSS/
-├── VRBNBXOSS-backend/          # Containerized backend
-│   ├── docker-compose.yml      # Local development
-│   ├── scripts/build.sh        # Build automation
-│   ├── config/                 # Configuration files
-│   └── supabase/               # Edge Functions
-├── design-documentation/       # Complete UX/UI specifications
-├── project-documentation/      # Product requirements
-└── tech-stack-pref.md         # Technology decisions
+
+### Backend Structure (Supabase)
+```
+supabase/
+├── migrations/              # Database migrations
+│   ├── 00001_initial_schema.sql
+│   ├── 00002_create_apartments.sql
+│   ├── 00003_create_reservations.sql
+│   └── ...
+│
+├── functions/              # Edge Functions
+│   ├── generate-contract/
+│   │   └── index.ts
+│   ├── sync-calendar/
+│   │   └── index.ts
+│   ├── send-notification/
+│   │   └── index.ts
+│   └── calculate-stats/
+│       └── index.ts
+│
+├── seed/                   # Seed data
+│   └── seed.sql
+│
+└── config.toml            # Supabase configuration
+```
+
+### Docker Setup
+```
+docker/
+├── docker-compose.yml      # Local development setup
+├── Dockerfile.dev         # Development container
+└── .env.example          # Environment variables template
+```
+
+---
+
+## Navigation Structure
+
+### Main Navigation
+```
+Dashboard
+├── Overview (/)
+│   ├── Today's Schedule
+│   ├── Revenue Summary
+│   ├── Recent Activity
+│   └── Quick Actions
+│
+├── Calendar (/calendar)
+│   ├── Month View
+│   ├── Week View
+│   ├── Day View
+│   └── Filters Panel
+│
+├── Reservations (/reservations)
+│   ├── All Reservations
+│   ├── Upcoming
+│   ├── In Progress
+│   ├── Completed
+│   └── Cancelled
+│
+├── Apartments (/apartments)
+│   ├── All Properties
+│   ├── Active
+│   ├── Maintenance
+│   └── Add New
+│
+├── Cleaning (/cleaning)
+│   ├── Schedule
+│   ├── Cleaners
+│   ├── Supplies
+│   └── Instructions
+│
+├── Guests (/guests)
+│   ├── All Guests
+│   ├── Current
+│   ├── Previous
+│   └── Blacklist
+│
+├── Analytics (/statistics)
+│   ├── Revenue
+│   ├── Occupancy
+│   ├── Platform Performance
+│   └── Reports
+│
+└── Settings (/settings)
+    ├── Profile
+    ├── Security
+    ├── Notifications
+    ├── Billing
+    ├── Integrations
+    └── API Keys
 ```
 
 ### Environment Configuration
