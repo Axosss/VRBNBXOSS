@@ -142,6 +142,11 @@ export const reservationFilterSchema = z.object({
   status: z.enum(['draft', 'pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'archived']).optional(),
   platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com']).optional(),
   apartmentId: z.string().uuid().optional(),
+  search: z.string().optional(),
+  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid start date').optional(),
+  endDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid end date').optional(),
+  sortBy: z.enum(['created_at', 'check_in', 'check_out', 'total_price']).default('created_at'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 })
 
 export const cleaningFilterSchema = z.object({

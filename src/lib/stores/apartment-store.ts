@@ -202,7 +202,7 @@ export const useApartmentStore = create<ApartmentState>()(
           set({ isUpdating: true, error: null })
           
           const response = await fetch(`/api/apartments/${id}`, {
-            method: 'PATCH',
+            method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
             },

@@ -50,7 +50,7 @@ export const createMockSupabaseClient = () => {
 
 // Test data factories
 export const createTestUser = (overrides = {}) => ({
-  id: 'TEST-USER-ID-FAKE',
+  id: 'b2c3d4e5-f6g7-5890-9def-234567890123',
   email: 'test-user-fake@example-not-real.com',
   user_metadata: {
     full_name: 'TEST USER FAKE',
@@ -59,7 +59,7 @@ export const createTestUser = (overrides = {}) => ({
 })
 
 export const createTestProfile = (overrides = {}) => ({
-  id: 'test-user-id',
+  id: 'b2c3d4e5-f6g7-5890-9def-234567890123',
   full_name: 'Test User',
   avatar_url: null,
   role: 'owner',
@@ -71,8 +71,8 @@ export const createTestProfile = (overrides = {}) => ({
 })
 
 export const createTestApartment = (overrides = {}) => ({
-  id: 'test-apartment-id',
-  owner_id: 'test-user-id',
+  id: 'a1b2c3d4-e5f6-4789-8abc-123456789012',
+  owner_id: 'b2c3d4e5-f6g7-5890-9def-234567890123',
   name: 'Test Apartment',
   address: {
     street: '123 Test St',
