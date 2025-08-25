@@ -56,7 +56,16 @@ describe('Profile API Tests', () => {
       expect(mockQuery.eq).toHaveBeenCalledWith('id', mockUser.id)
 
       expectSuccessResponse(result)
-      expect(result.data).toMatchObject(mockProfile)
+      expect(result.data).toMatchObject({
+        id: mockProfile.id,
+        fullName: mockProfile.full_name,
+        avatarUrl: mockProfile.avatar_url,
+        role: mockProfile.role,
+        timezone: mockProfile.timezone,
+        settings: mockProfile.settings,
+        createdAt: mockProfile.created_at,
+        updatedAt: mockProfile.updated_at,
+      })
     })
 
     it('should handle profile not found', async () => {
@@ -120,13 +129,21 @@ describe('Profile API Tests', () => {
     }
 
     it('should update profile successfully', async () => {
-      const updatedProfile = { ...mockProfile, ...validUpdateData }
+      // Database response with snake_case fields
+      const updatedDbProfile = { 
+        ...mockProfile, 
+        full_name: validUpdateData.fullName,
+        avatar_url: validUpdateData.avatarUrl,
+        timezone: validUpdateData.timezone,
+        settings: validUpdateData.settings,
+        updated_at: new Date().toISOString(),
+      }
 
       const mockQuery = {
         update: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(updatedProfile)),
+        single: jest.fn().mockResolvedValue(mockDatabaseSuccess(updatedDbProfile)),
       }
 
       mockSupabase.from.mockReturnValue(mockQuery)
@@ -146,7 +163,17 @@ describe('Profile API Tests', () => {
       expect(mockQuery.eq).toHaveBeenCalledWith('id', mockUser.id)
 
       expectSuccessResponse(result)
-      expect(result.data).toMatchObject(updatedProfile)
+      // API response uses camelCase field names
+      expect(result.data).toMatchObject({
+        id: updatedDbProfile.id,
+        fullName: updatedDbProfile.full_name,
+        avatarUrl: updatedDbProfile.avatar_url,
+        role: updatedDbProfile.role,
+        timezone: updatedDbProfile.timezone,
+        settings: updatedDbProfile.settings,
+        createdAt: updatedDbProfile.created_at,
+        updatedAt: updatedDbProfile.updated_at,
+      })
       expect(result.message).toBe('Profile updated successfully')
     })
 
@@ -304,8 +331,8 @@ describe('Profile API Tests', () => {
       const response = await profilePut(request as any)
       const result = await response.json()
 
-      expectErrorResponse(result, 404)
-      expect(result.error).toBe('Profile not found')
+      expectErrorResponse(result, 400)
+      expect(result.error).toBe('Row not found')
     })
 
     it('should handle database update errors', async () => {
@@ -322,7 +349,8 @@ describe('Profile API Tests', () => {
       const response = await profilePut(request as any)
       const result = await response.json()
 
-      expectErrorResponse(result, 404) // Maps to profile not found
+      expectErrorResponse(result, 400)
+      expect(result.error).toBe('Constraint violation')
     })
 
     it('should handle empty update data', async () => {

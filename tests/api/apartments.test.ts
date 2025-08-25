@@ -9,6 +9,7 @@ import {
   createMockSupabaseClient,
   createTestUser,
   createTestApartment,
+  createTestReservation,
   createMockRequest,
   expectSuccessResponse,
   expectErrorResponse,
@@ -350,14 +351,17 @@ describe('Apartments API Tests', () => {
       const mockQuery = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue(mockDatabaseError('Row not found')),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: { code: 'PGRST116' }
+        }),
       }
 
       mockSupabase.from.mockReturnValue(mockQuery)
 
       const request = createMockRequest('GET')
       const response = await apartmentGet(request as any, { 
-        params: { id: 'non-existent-id' } 
+        params: { id: 'a1b2c3d4-e5f6-4789-8abc-123456789012' } 
       })
       const result = await response.json()
 
@@ -449,7 +453,7 @@ describe('Apartments API Tests', () => {
 
       const request = createMockRequest('PUT', partialUpdate)
       const response = await apartmentPut(request as any, { 
-        params: { id: 'test-apartment-id' } 
+        params: { id: apartmentId } 
       })
       const result = await response.json()
 
@@ -487,19 +491,17 @@ describe('Apartments API Tests', () => {
         update: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue(mockDatabaseError('Row not found')),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: { code: 'PGRST116' }
+        }),
       }
-
-      // Mock the error with the PostgreSQL error code
-      const mockError = new Error('Row not found')
-      mockError.code = 'PGRST116'
-      mockQuery.single.mockResolvedValue({ error: mockError, data: null })
 
       mockSupabase.from.mockReturnValue(mockQuery)
 
       const request = createMockRequest('PUT', validUpdateData)
       const response = await apartmentPut(request as any, { 
-        params: { id: 'non-existent-id' } 
+        params: { id: 'a1b2c3d4-e5f6-4789-8abc-123456789012' } 
       })
       const result = await response.json()
 
@@ -528,14 +530,17 @@ describe('Apartments API Tests', () => {
         update: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue(mockDatabaseError('Database constraint violation')),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: new Error('Database constraint violation')
+        }),
       }
 
       mockSupabase.from.mockReturnValue(mockQuery)
 
       const request = createMockRequest('PUT', validUpdateData)
       const response = await apartmentPut(request as any, { 
-        params: { id: 'valid-uuid-1234-5678-9abc-def012345678' } 
+        params: { id: 'a1b2c3d4-e5f6-4789-8abc-123456789012' } 
       })
       const result = await response.json()
 
@@ -568,20 +573,21 @@ describe('Apartments API Tests', () => {
         .mockReturnValueOnce(reservationQuery) // First call for reservations check
         .mockReturnValueOnce(updateQuery) // Second call for apartment update
 
+      const apartmentId = 'a1b2c3d4-e5f6-4789-8abc-123456789012'
       const request = createMockRequest('DELETE')
       const response = await apartmentDelete(request as any, { 
-        params: { id: 'test-apartment-id' } 
+        params: { id: apartmentId } 
       })
       const result = await response.json()
 
       expect(mockSupabase.from).toHaveBeenCalledWith('reservations')
       expect(reservationQuery.select).toHaveBeenCalledWith('id')
-      expect(reservationQuery.eq).toHaveBeenCalledWith('apartment_id', 'test-apartment-id')
+      expect(reservationQuery.eq).toHaveBeenCalledWith('apartment_id', apartmentId)
       expect(reservationQuery.in).toHaveBeenCalledWith('status', ['confirmed', 'checked_in'])
 
       expect(mockSupabase.from).toHaveBeenCalledWith('apartments')
       expect(updateQuery.update).toHaveBeenCalledWith({ status: 'inactive' })
-      expect(updateQuery.eq).toHaveBeenCalledWith('id', 'test-apartment-id')
+      expect(updateQuery.eq).toHaveBeenCalledWith('id', apartmentId)
       expect(updateQuery.eq).toHaveBeenCalledWith('owner_id', mockUser.id)
 
       expectSuccessResponse(result)
@@ -590,6 +596,7 @@ describe('Apartments API Tests', () => {
     })
 
     it('should prevent deletion when active reservations exist', async () => {
+      const apartmentId = 'a1b2c3d4-e5f6-4789-8abc-123456789012'
       const mockActiveReservation = createTestReservation({ status: 'confirmed' })
 
       const reservationQuery = {
@@ -603,7 +610,7 @@ describe('Apartments API Tests', () => {
 
       const request = createMockRequest('DELETE')
       const response = await apartmentDelete(request as any, { 
-        params: { id: 'test-apartment-id' } 
+        params: { id: apartmentId } 
       })
       const result = await response.json()
 
@@ -649,7 +656,7 @@ describe('Apartments API Tests', () => {
 
       const request = createMockRequest('DELETE')
       const response = await apartmentDelete(request as any, { 
-        params: { id: 'non-existent-id' } 
+        params: { id: 'a1b2c3d4-e5f6-4789-8abc-123456789012' } 
       })
       const result = await response.json()
 

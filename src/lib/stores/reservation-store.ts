@@ -311,7 +311,14 @@ export const useReservationStore = create<ReservationState>()(
           return data.data.available
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to check availability'
-          set({ error: errorMessage })
+          
+          // Check if it's an authentication error
+          if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+            set({ error: 'Please log in to check availability' })
+          } else {
+            set({ error: errorMessage })
+          }
+          
           return false
         }
       },

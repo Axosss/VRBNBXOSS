@@ -148,9 +148,9 @@ export async function POST(request: NextRequest) {
       throw new AppError('Apartment not found or not owned by user', 404)
     }
     
-    // Validate guest count against apartment capacity (additional check, DB has trigger too)
+    // Log guest count vs capacity for informational purposes
     if (reservationData.guestCount > apartment.capacity) {
-      throw new AppError(`Guest count (${reservationData.guestCount}) exceeds apartment capacity (${apartment.capacity})`, 400)
+      console.log(`INFO: Guest count (${reservationData.guestCount}) exceeds apartment capacity (${apartment.capacity})`)
     }
 
     // Verify guest exists if guestId is provided

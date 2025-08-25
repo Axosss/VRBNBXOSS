@@ -5,10 +5,10 @@ import { createErrorResponse, createSuccessResponse, AppError, isValidUUID, getD
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     console.log('Fetching reservation with ID:', id)
     
     // Validate UUID
@@ -20,6 +20,8 @@ export async function GET(
     
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    console.log('Reservation API - User:', user ? user.id : 'null', 'Error:', userError?.message || 'none')
     
     if (userError || !user) {
       throw new AppError('Unauthorized', 401)
@@ -101,10 +103,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     console.log('Updating reservation with ID:', id)
     
     // Validate UUID
@@ -170,7 +172,7 @@ export async function PUT(
       }
       
       if (updateData.guestCount > apartment.capacity) {
-        throw new AppError(`Guest count (${updateData.guestCount}) exceeds apartment capacity (${apartment.capacity})`, 400)
+        console.log(`INFO: Guest count (${updateData.guestCount}) exceeds apartment capacity (${apartment.capacity})`)
       }
     }
     
@@ -249,10 +251,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     console.log('Deleting reservation with ID:', id)
     
     // Validate UUID

@@ -5,12 +5,12 @@ import { createErrorResponse, createSuccessResponse, AppError, isValidUUID } fro
 import { z } from 'zod'
 
 interface RouteParams {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params
+    const { id } = await params
     
     if (!isValidUUID(id)) {
       throw new AppError('Invalid apartment ID', 400)
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     
     if (!isValidUUID(id)) {
@@ -113,7 +113,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params
+    const { id } = await params
     
     if (!isValidUUID(id)) {
       throw new AppError('Invalid apartment ID', 400)

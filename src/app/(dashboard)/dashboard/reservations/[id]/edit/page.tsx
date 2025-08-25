@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, AlertCircle } from 'lucide-react'
@@ -11,12 +11,13 @@ import { useReservationStore } from '@/lib/stores/reservation-store'
 import { type ReservationUpdateInput } from '@/lib/validations'
 
 interface EditReservationPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function EditReservationPage({ params }: EditReservationPageProps) {
+  const resolvedParams = use(params)
   const router = useRouter()
   
   const { 
@@ -29,15 +30,15 @@ export default function EditReservationPage({ params }: EditReservationPageProps
   } = useReservationStore()
 
   useEffect(() => {
-    if (params.id) {
-      fetchReservation(params.id)
+    if (resolvedParams.id) {
+      fetchReservation(resolvedParams.id)
     }
-  }, [params.id, fetchReservation])
+  }, [resolvedParams.id, fetchReservation])
 
   const handleSubmit = async (data: ReservationUpdateInput) => {
     try {
-      await updateReservation(params.id, data)
-      router.push(`/dashboard/reservations/${params.id}`)
+      await updateReservation(resolvedParams.id, data)
+      router.push(`/dashboard/reservations/${resolvedParams.id}`)
     } catch (error) {
       console.error('Failed to update reservation:', error)
       throw error
@@ -45,7 +46,7 @@ export default function EditReservationPage({ params }: EditReservationPageProps
   }
 
   const handleCancel = () => {
-    router.push(`/dashboard/reservations/${params.id}`)
+    router.push(`/dashboard/reservations/${resolvedParams.id}`)
   }
 
   if (isLoading) {
@@ -97,7 +98,7 @@ export default function EditReservationPage({ params }: EditReservationPageProps
             variant="outline" 
             onClick={() => {
               clearError()
-              fetchReservation(params.id)
+              fetchReservation(resolvedParams.id)
             }}
           >
             Try Again

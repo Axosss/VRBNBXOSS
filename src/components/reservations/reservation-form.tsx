@@ -149,7 +149,15 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
       setAvailabilityChecked(true)
       return true
     } catch (error) {
-      setAvailabilityError('Failed to check availability. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to check availability'
+      
+      // Check if it's an authentication error
+      if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+        setAvailabilityError('Please log in to check availability.')
+      } else {
+        setAvailabilityError('Failed to check availability. Please try again.')
+      }
+      
       setAvailabilityChecked(false)
       return false
     }

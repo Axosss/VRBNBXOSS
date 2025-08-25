@@ -9,6 +9,42 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'node',
+  testEnvironmentOptions: {
+    customExportConditions: [''],
+  },
+  projects: [
+    {
+      displayName: 'node',
+      testEnvironment: 'node',
+      testMatch: [
+        '<rootDir>/tests/api/**/*.test.{js,jsx,ts,tsx}',
+        '<rootDir>/tests/unit/**/*.test.{js,jsx,ts,tsx}',
+        '<rootDir>/tests/integration/**/*.test.{js,jsx,ts,tsx}',
+        '<rootDir>/tests/performance/**/*.test.{js,jsx,ts,tsx}',
+      ],
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+      },
+      transform: {
+        '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+      },
+    },
+    {
+      displayName: 'jsdom',
+      testEnvironment: 'jsdom',
+      testMatch: [
+        '<rootDir>/tests/components/**/*.test.{js,jsx,ts,tsx}',
+      ],
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/src/$1',
+      },
+      transform: {
+        '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
+      },
+    },
+  ],
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
@@ -19,13 +55,6 @@ const customJestConfig = {
     '!src/**/*.d.ts',
     '!src/app/layout.tsx',
     '!src/app/globals.css',
-  ],
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-  testMatch: [
-    '<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}',
-    '<rootDir>/src/**/*.test.{js,jsx,ts,tsx}',
   ],
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { notFound } from 'next/navigation'
 import { 
@@ -27,14 +27,16 @@ import { PlatformBadge } from '@/components/reservations/platform-badge'
 import { useReservationStore } from '@/lib/stores/reservation-store'
 
 interface ReservationDetailPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function ReservationDetailPage({ params }: ReservationDetailPageProps) {
+  const resolvedParams = use(params)
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [hasTriedToLoad, setHasTriedToLoad] = useState(false)
   
   const { 
     selectedReservation, 
@@ -47,13 +49,14 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
   } = useReservationStore()
 
   useEffect(() => {
-    if (params.id) {
-      fetchReservation(params.id)
+    if (resolvedParams.id) {
+      setHasTriedToLoad(true)
+      fetchReservation(resolvedParams.id)
     }
-  }, [params.id, fetchReservation])
+  }, [resolvedParams.id, fetchReservation])
 
   const handleEdit = () => {
-    router.push(`/dashboard/reservations/${params.id}/edit`)
+    router.push(`/dashboard/reservations/${resolvedParams.id}/edit`)
   }
 
   const handleDelete = async () => {
@@ -83,7 +86,7 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
         status: newStatus as any 
       })
       // Refetch to get updated data
-      fetchReservation(params.id)
+      fetchReservation(resolvedParams.id)
     } catch (error) {
       console.error('Failed to update status:', error)
     }
@@ -177,7 +180,7 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
             variant="outline" 
             onClick={() => {
               clearError()
-              fetchReservation(params.id)
+              fetchReservation(resolvedParams.id)
             }}
           >
             Try Again
@@ -187,8 +190,24 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
     )
   }
 
-  if (!selectedReservation) {
+  // If still loading or haven't tried to load yet, show loading state
+  if (isLoading || !hasTriedToLoad) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  // If we have tried to load but don't have a reservation and no error, show not found
+  if (hasTriedToLoad && !selectedReservation && !error) {
     notFound()
+  }
+
+  // If we have an error, the error UI above will handle it
+  // If we have a reservation, continue with the normal rendering
+  if (!selectedReservation) {
+    return null // This should not happen but prevents crashes
   }
 
   const statusActions = getStatusActions()
@@ -342,9 +361,20 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
               {selectedReservation.contact_info && (
                 <div>
                   <h4 className="font-semibold mb-2">Additional Contact Info</h4>
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {JSON.stringify(selectedReservation.contact_info, null, 2)}
-                  </pre>
+                  <div className="space-y-2 text-sm">
+                    {typeof selectedReservation.contact_info === 'object' ? (
+                      Object.entries(selectedReservation.contact_info).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-muted-foreground capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
+                          </span>
+                          <span className="font-medium">{String(value)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground">{String(selectedReservation.contact_info)}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </CardContent>
