@@ -27,7 +27,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
   { name: 'Reservations', href: '/dashboard/reservations', icon: ClipboardList },
-  { name: 'Properties', href: '/dashboard/properties', icon: Building },
+  { name: 'Apartments', href: '/dashboard/apartments', icon: Building },
   { name: 'Guests', href: '/dashboard/guests', icon: Users },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -46,7 +46,7 @@ export default function DashboardLayout({
   const handleSignOut = async () => {
     try {
       await signOut()
-      router.push('/auth/login')
+      router.push('/login')
     } catch (error) {
       console.error('Sign out error:', error)
     }

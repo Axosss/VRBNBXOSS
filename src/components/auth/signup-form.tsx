@@ -187,7 +187,7 @@ export function SignupForm({ className }: SignupFormProps) {
             <Button
               variant="link"
               className="p-0 h-auto font-medium text-primary"
-              onClick={() => router.push('/auth/login')}
+              onClick={() => router.push('/login')}
               disabled={isLoading}
             >
               Sign in

@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
     // Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     
+    console.log('Profile API - User:', user ? user.id : 'null', 'Error:', userError?.message || 'none')
+    
     if (userError || !user) {
       throw new AppError('Unauthorized', 401)
     }
@@ -22,7 +24,47 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single()
     
+    console.log('Profile query result - Profile:', !!profile, 'Error:', profileError?.message || 'none')
+    
     if (profileError) {
+      // If profile doesn't exist, create it automatically
+      if (profileError.code === 'PGRST116') { // No rows found
+        console.log('Creating missing profile for user:', user.id)
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            avatar_url: user.user_metadata?.avatar_url || null,
+            role: 'owner',
+            timezone: 'UTC',
+            settings: {}
+          })
+          .select()
+          .single()
+        
+        if (createError) {
+          console.error('Failed to create profile:', createError)
+          throw new AppError('Failed to create profile', 500)
+        }
+        
+        console.log('Profile created successfully:', newProfile)
+        
+        return NextResponse.json(
+          createSuccessResponse({
+            id: newProfile.id,
+            fullName: newProfile.full_name,
+            avatarUrl: newProfile.avatar_url,
+            role: newProfile.role,
+            timezone: newProfile.timezone,
+            settings: newProfile.settings,
+            createdAt: newProfile.created_at,
+            updatedAt: newProfile.updated_at,
+          })
+        )
+      }
+      
       throw new AppError('Profile not found', 404)
     }
     

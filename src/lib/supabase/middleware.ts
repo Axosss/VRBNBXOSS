@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith('/api/protected'))
   ) {
     const url = request.nextUrl.clone()
-    url.pathname = '/auth/login'
+    url.pathname = '/login'
     url.searchParams.set('redirectTo', request.nextUrl.pathname)
     return NextResponse.redirect(url)
   }
@@ -50,9 +50,9 @@ export async function updateSession(request: NextRequest) {
   // Authenticated users shouldn't access auth pages
   if (
     user &&
-    (request.nextUrl.pathname.startsWith('/auth/login') ||
-      request.nextUrl.pathname.startsWith('/auth/register') ||
-      request.nextUrl.pathname.startsWith('/auth/forgot-password'))
+    (request.nextUrl.pathname.startsWith('/login') ||
+      request.nextUrl.pathname.startsWith('/register') ||
+      request.nextUrl.pathname.startsWith('/forgot-password'))
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'

@@ -73,9 +73,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('Received apartment data:', JSON.stringify(body, null, 2))
     
     // Validate input
     const apartmentData = apartmentCreateSchema.parse(body)
+    console.log('Validated apartment data:', JSON.stringify(apartmentData, null, 2))
     
     const supabase = await createClient()
     

@@ -134,7 +134,7 @@ export function LoginForm({ className }: LoginFormProps) {
           <Button
             variant="link"
             className="text-sm text-muted-foreground p-0 h-auto"
-            onClick={() => router.push('/auth/forgot-password')}
+            onClick={() => router.push('/forgot-password')}
             disabled={isLoading}
           >
             Forgot your password?
@@ -144,7 +144,7 @@ export function LoginForm({ className }: LoginFormProps) {
             <Button
               variant="link"
               className="p-0 h-auto font-medium text-primary"
-              onClick={() => router.push('/auth/register')}
+              onClick={() => router.push('/register')}
               disabled={isLoading}
             >
               Sign up

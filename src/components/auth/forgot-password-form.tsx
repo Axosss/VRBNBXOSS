@@ -79,7 +79,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => router.push('/auth/login')}
+            onClick={() => router.push('/login')}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to sign in
@@ -156,7 +156,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
           <Button
             variant="link"
             className="text-sm text-muted-foreground p-0 h-auto"
-            onClick={() => router.push('/auth/login')}
+            onClick={() => router.push('/login')}
             disabled={isLoading}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
