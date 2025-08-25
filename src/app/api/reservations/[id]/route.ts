@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reservationUpdateSchema } from '@/lib/validations'
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID, getDaysBetween } from '@/lib/utils'
+import { sanitizeText, sanitizeContactInfo } from '@/lib/utils/sanitize'
+import { rateLimit } from '@/middleware/rate-limit'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Apply rate limiting for read operations
+  const rateLimitResponse = await rateLimit(request, 'read')
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const { id } = await params
     console.log('Fetching reservation with ID:', id)
@@ -105,6 +111,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Apply rate limiting for write operations
+  const rateLimitResponse = await rateLimit(request, 'write')
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const { id } = await params
     console.log('Updating reservation with ID:', id)
@@ -181,7 +191,7 @@ export async function PUT(
     
     if (updateData.guestId !== undefined) dbUpdateData.guest_id = updateData.guestId
     if (updateData.platform) dbUpdateData.platform = updateData.platform
-    if (updateData.platformReservationId !== undefined) dbUpdateData.platform_reservation_id = updateData.platformReservationId
+    if (updateData.platformReservationId !== undefined) dbUpdateData.platform_reservation_id = sanitizeText(updateData.platformReservationId)
     if (updateData.checkIn) dbUpdateData.check_in = updateData.checkIn
     if (updateData.checkOut) dbUpdateData.check_out = updateData.checkOut
     if (updateData.guestCount) dbUpdateData.guest_count = updateData.guestCount
@@ -189,8 +199,8 @@ export async function PUT(
     if (updateData.cleaningFee !== undefined) dbUpdateData.cleaning_fee = updateData.cleaningFee
     if (updateData.platformFee !== undefined) dbUpdateData.platform_fee = updateData.platformFee
     if (updateData.currency) dbUpdateData.currency = updateData.currency
-    if (updateData.notes !== undefined) dbUpdateData.notes = updateData.notes
-    if (updateData.contactInfo !== undefined) dbUpdateData.contact_info = updateData.contactInfo
+    if (updateData.notes !== undefined) dbUpdateData.notes = sanitizeText(updateData.notes)
+    if (updateData.contactInfo !== undefined) dbUpdateData.contact_info = sanitizeContactInfo(updateData.contactInfo)
     
     // Add updated_at
     dbUpdateData.updated_at = new Date().toISOString()
@@ -253,6 +263,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Apply rate limiting for write operations
+  const rateLimitResponse = await rateLimit(request, 'write')
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const { id } = await params
     console.log('Deleting reservation with ID:', id)

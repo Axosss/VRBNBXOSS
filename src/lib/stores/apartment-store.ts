@@ -109,6 +109,12 @@ export const useApartmentStore = create<ApartmentState>()(
           const response = await fetch(`/api/apartments?${searchParams.toString()}`)
           const data = await response.json()
           
+          console.log('Apartment store - API response:', {
+            ok: response.ok,
+            status: response.status,
+            data: data
+          })
+          
           if (!response.ok) {
             throw new Error(data.error || 'Failed to fetch apartments')
           }

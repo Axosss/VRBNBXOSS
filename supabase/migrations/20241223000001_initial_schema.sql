@@ -5,41 +5,57 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Create custom types
-CREATE TYPE reservation_status AS ENUM (
-  'draft', 
-  'pending', 
-  'confirmed', 
-  'checked_in', 
-  'checked_out', 
-  'cancelled', 
-  'archived'
-);
+-- Create custom types (if they don't exist)
+DO $$ BEGIN
+  CREATE TYPE reservation_status AS ENUM (
+    'draft', 
+    'pending', 
+    'confirmed', 
+    'checked_in', 
+    'checked_out', 
+    'cancelled', 
+    'archived'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE platform_type AS ENUM (
-  'airbnb',
-  'vrbo', 
-  'direct',
-  'booking_com'
-);
+DO $$ BEGIN
+  CREATE TYPE platform_type AS ENUM (
+    'airbnb',
+    'vrbo', 
+    'direct',
+    'booking_com'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE apartment_status AS ENUM (
-  'active',
-  'maintenance', 
-  'inactive'
-);
+DO $$ BEGIN
+  CREATE TYPE apartment_status AS ENUM (
+    'active',
+    'maintenance', 
+    'inactive'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE cleaning_status AS ENUM (
-  'needed',
-  'scheduled',
-  'in_progress',
-  'completed',
-  'verified',
-  'cancelled'
-);
+DO $$ BEGIN
+  CREATE TYPE cleaning_status AS ENUM (
+    'needed',
+    'scheduled',
+    'in_progress',
+    'completed',
+    'verified',
+    'cancelled'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Profiles table (extends auth.users)
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT,
   avatar_url TEXT,
@@ -51,7 +67,7 @@ CREATE TABLE profiles (
 );
 
 -- Apartments table
-CREATE TABLE apartments (
+CREATE TABLE IF NOT EXISTS apartments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -68,7 +84,7 @@ CREATE TABLE apartments (
 );
 
 -- Guests table
-CREATE TABLE guests (
+CREATE TABLE IF NOT EXISTS guests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -81,7 +97,7 @@ CREATE TABLE guests (
 );
 
 -- Reservations table
-CREATE TABLE reservations (
+CREATE TABLE IF NOT EXISTS reservations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   apartment_id UUID NOT NULL REFERENCES apartments(id) ON DELETE CASCADE,
   owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -102,12 +118,13 @@ CREATE TABLE reservations (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   
   -- Constraints
-  CONSTRAINT valid_dates CHECK (check_out > check_in),
-  CONSTRAINT valid_guest_capacity CHECK (guest_count <= (SELECT capacity FROM apartments WHERE id = apartment_id))
+  CONSTRAINT valid_dates CHECK (check_out > check_in)
+  -- Note: Guest capacity validation is handled in application logic or triggers
+  -- PostgreSQL doesn't support subqueries in CHECK constraints
 );
 
 -- Cleaners table
-CREATE TABLE cleaners (
+CREATE TABLE IF NOT EXISTS cleaners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
@@ -119,7 +136,7 @@ CREATE TABLE cleaners (
 );
 
 -- Cleanings table
-CREATE TABLE cleanings (
+CREATE TABLE IF NOT EXISTS cleanings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   apartment_id UUID NOT NULL REFERENCES apartments(id) ON DELETE CASCADE,
   cleaner_id UUID REFERENCES cleaners(id),
@@ -133,28 +150,28 @@ CREATE TABLE cleanings (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create indexes for performance
-CREATE INDEX idx_apartments_owner_id ON apartments(owner_id);
-CREATE INDEX idx_apartments_status ON apartments(status);
+-- Create indexes for performance (if they don't exist)
+CREATE INDEX IF NOT EXISTS idx_apartments_owner_id ON apartments(owner_id);
+CREATE INDEX IF NOT EXISTS idx_apartments_status ON apartments(status);
 
-CREATE INDEX idx_reservations_owner_id ON reservations(owner_id);
-CREATE INDEX idx_reservations_apartment_id ON reservations(apartment_id);
-CREATE INDEX idx_reservations_dates ON reservations(check_in, check_out);
-CREATE INDEX idx_reservations_status ON reservations(status);
-CREATE INDEX idx_reservations_platform ON reservations(platform);
+CREATE INDEX IF NOT EXISTS idx_reservations_owner_id ON reservations(owner_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_apartment_id ON reservations(apartment_id);
+CREATE INDEX IF NOT EXISTS idx_reservations_dates ON reservations(check_in, check_out);
+CREATE INDEX IF NOT EXISTS idx_reservations_status ON reservations(status);
+CREATE INDEX IF NOT EXISTS idx_reservations_platform ON reservations(platform);
 
-CREATE INDEX idx_guests_owner_id ON guests(owner_id);
-CREATE INDEX idx_guests_email ON guests(email);
+CREATE INDEX IF NOT EXISTS idx_guests_owner_id ON guests(owner_id);
+CREATE INDEX IF NOT EXISTS idx_guests_email ON guests(email);
 
-CREATE INDEX idx_cleanings_apartment_id ON cleanings(apartment_id);
-CREATE INDEX idx_cleanings_cleaner_id ON cleanings(cleaner_id);
-CREATE INDEX idx_cleanings_scheduled_date ON cleanings(scheduled_date);
-CREATE INDEX idx_cleanings_status ON cleanings(status);
+CREATE INDEX IF NOT EXISTS idx_cleanings_apartment_id ON cleanings(apartment_id);
+CREATE INDEX IF NOT EXISTS idx_cleanings_cleaner_id ON cleanings(cleaner_id);
+CREATE INDEX IF NOT EXISTS idx_cleanings_scheduled_date ON cleanings(scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_cleanings_status ON cleanings(status);
 
-CREATE INDEX idx_cleaners_owner_id ON cleaners(owner_id);
+CREATE INDEX IF NOT EXISTS idx_cleaners_owner_id ON cleaners(owner_id);
 
 -- Unique constraints
-CREATE UNIQUE INDEX idx_platform_reservation_unique ON reservations(platform, platform_reservation_id) 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_platform_reservation_unique ON reservations(platform, platform_reservation_id) 
 WHERE platform_reservation_id IS NOT NULL;
 
 -- Comment on tables

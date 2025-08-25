@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { apartmentCreateSchema, paginationSchema, apartmentFilterSchema } from '@/lib/validations'
 import { createErrorResponse, createSuccessResponse, AppError } from '@/lib/utils'
+import { sanitizeSearchQuery, sanitizeText } from '@/lib/utils/sanitize'
 import { z } from 'zod'
 
 export async function GET(request: NextRequest) {
@@ -35,7 +36,8 @@ export async function GET(request: NextRequest) {
     }
     
     if (filters.search) {
-      query = query.ilike('name', `%${filters.search}%`)
+      const sanitizedSearch = sanitizeSearchQuery(filters.search)
+      query = query.ilike('name', `%${sanitizedSearch}%`)
     }
     
     // Apply pagination
@@ -58,15 +60,23 @@ export async function GET(request: NextRequest) {
           limit: pagination.limit,
           total: count || 0,
           totalPages: Math.ceil((count || 0) / pagination.limit),
-        },
-      })
+        }
+      }, 'Apartments fetched successfully')
     )
     
   } catch (error) {
-    const errorResponse = createErrorResponse(error)
-    return NextResponse.json(errorResponse, { 
-      status: errorResponse.statusCode 
-    })
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        createErrorResponse(error.message, error.statusCode),
+        { status: error.statusCode }
+      )
+    }
+    
+    console.error('Apartments API error:', error)
+    return NextResponse.json(
+      createErrorResponse('Failed to fetch apartments', 500),
+      { status: 500 }
+    )
   }
 }
 
@@ -86,21 +96,23 @@ export async function POST(request: NextRequest) {
       throw new AppError('Unauthorized', 401)
     }
     
-    // Prepare apartment data
+    // Prepare data for insertion
     const insertData = {
       owner_id: user.id,
-      name: apartmentData.name,
+      name: sanitizeText(apartmentData.name),
       address: apartmentData.address,
       capacity: apartmentData.capacity,
-      bedrooms: apartmentData.bedrooms || null,
-      bathrooms: apartmentData.bathrooms || null,
+      bedrooms: apartmentData.bedrooms,
+      bathrooms: apartmentData.bathrooms,
+      square_feet: apartmentData.squareFeet,
       amenities: apartmentData.amenities || [],
-      access_codes: apartmentData.accessCodes || null,
       photos: [],
-      status: 'active' as const,
+      access_codes: apartmentData.accessCodes,
+      status: apartmentData.status || 'active',
+      notes: apartmentData.notes ? sanitizeText(apartmentData.notes) : null
     }
     
-    // Create apartment
+    // Insert apartment
     const { data: apartment, error: insertError } = await supabase
       .from('apartments')
       .insert(insertData)
@@ -117,9 +129,24 @@ export async function POST(request: NextRequest) {
     )
     
   } catch (error) {
-    const errorResponse = createErrorResponse(error)
-    return NextResponse.json(errorResponse, { 
-      status: errorResponse.statusCode 
-    })
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        createErrorResponse(error.message, error.statusCode),
+        { status: error.statusCode }
+      )
+    }
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        createErrorResponse('Invalid input data', 400),
+        { status: 400 }
+      )
+    }
+    
+    console.error('Create apartment error:', error)
+    return NextResponse.json(
+      createErrorResponse('Failed to create apartment', 500),
+      { status: 500 }
+    )
   }
 }

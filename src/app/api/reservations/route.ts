@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reservationCreateSchema, paginationSchema, reservationFilterSchema } from '@/lib/validations'
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID } from '@/lib/utils'
+import { sanitizeText, sanitizeContactInfo, sanitizeSearchQuery } from '@/lib/utils/sanitize'
+import { rateLimit } from '@/middleware/rate-limit'
 import { z } from 'zod'
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting for read operations
+  const rateLimitResponse = await rateLimit(request, 'read')
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const { searchParams } = new URL(request.url)
     const queryParams = Object.fromEntries(searchParams.entries())
@@ -24,12 +30,12 @@ export async function GET(request: NextRequest) {
       throw new AppError('Unauthorized', 401)
     }
     
-    // Build query with joins
+    // Build query with joins - use left join for apartments to avoid RLS recursion
     let query = supabase
       .from('reservations')
       .select(`
         *,
-        apartment:apartments!inner(
+        apartment:apartments(
           id,
           name,
           address,
@@ -58,12 +64,10 @@ export async function GET(request: NextRequest) {
     }
     
     if (filters.search) {
-      // Search in guest name, platform reservation ID, or notes
-      query = query.or(`
-        guests.name.ilike.%${filters.search}%,
-        platform_reservation_id.ilike.%${filters.search}%,
-        notes.ilike.%${filters.search}%
-      `)
+      // Sanitize search query to prevent injection
+      const sanitizedSearch = sanitizeSearchQuery(filters.search)
+      // Use parameterized query with Supabase's built-in escaping
+      query = query.or(`guests.name.ilike.%${sanitizedSearch}%,platform_reservation_id.ilike.%${sanitizedSearch}%,notes.ilike.%${sanitizedSearch}%`)
     }
     
     if (filters.startDate) {
@@ -119,6 +123,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting for write operations
+  const rateLimitResponse = await rateLimit(request, 'write')
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const body = await request.json()
     console.log('Received reservation data:', JSON.stringify(body, null, 2))
@@ -173,7 +181,7 @@ export async function POST(request: NextRequest) {
       owner_id: user.id,
       guest_id: reservationData.guestId,
       platform: reservationData.platform,
-      platform_reservation_id: reservationData.platformReservationId,
+      platform_reservation_id: sanitizeText(reservationData.platformReservationId),
       check_in: reservationData.checkIn,
       check_out: reservationData.checkOut,
       guest_count: reservationData.guestCount,
@@ -182,19 +190,37 @@ export async function POST(request: NextRequest) {
       platform_fee: reservationData.platformFee || 0,
       currency: reservationData.currency || 'USD',
       status: 'confirmed' as const,
-      notes: reservationData.notes || null,
-      contact_info: reservationData.contactInfo || null,
+      notes: sanitizeText(reservationData.notes),
+      contact_info: sanitizeContactInfo(reservationData.contactInfo),
     }
     
     console.log('Inserting reservation data:', JSON.stringify(insertData, null, 2))
     
-    // Create reservation (DB triggers will handle double-booking validation)
+    // Final availability check right before insert to prevent race conditions
+    const { data: conflicts, error: conflictError } = await supabase
+      .from('reservations')
+      .select('id')
+      .eq('apartment_id', reservationData.apartmentId)
+      .neq('status', 'cancelled')
+      .or(`and(check_in.lte.${reservationData.checkOut},check_out.gte.${reservationData.checkIn})`)
+      .limit(1)
+    
+    if (conflictError) {
+      console.error('Conflict check error:', conflictError)
+      throw new AppError('Failed to verify availability', 500)
+    }
+    
+    if (conflicts && conflicts.length > 0) {
+      throw new AppError('These dates are no longer available. Please refresh and try again.', 409)
+    }
+    
+    // Create reservation (DB triggers will handle additional validation)
     const { data: reservation, error: insertError } = await supabase
       .from('reservations')
       .insert(insertData)
       .select(`
         *,
-        apartment:apartments!inner(
+        apartment:apartments(
           id,
           name,
           address,

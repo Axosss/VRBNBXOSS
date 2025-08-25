@@ -155,6 +155,63 @@ export const cleaningFilterSchema = z.object({
   cleanerId: z.string().uuid().optional(),
 })
 
+// Calendar schemas
+export const calendarFiltersSchema = z.object({
+  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid start date'),
+  endDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid end date'),
+  apartmentIds: z.array(z.string().uuid()).optional(),
+  view: z.enum(['month', 'week', 'day']).default('month'),
+  includeCleanings: z.boolean().default(false),
+}).refine(
+  (data) => new Date(data.endDate) >= new Date(data.startDate),
+  {
+    message: 'End date must be after or equal to start date',
+    path: ['endDate'],
+  }
+)
+
+export const availabilityCheckSchema = z.object({
+  apartmentId: z.string().uuid('Invalid apartment ID'),
+  checkIn: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid check-in date'),
+  checkOut: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid check-out date'),
+  excludeReservationId: z.string().uuid().optional(),
+}).refine(
+  (data) => new Date(data.checkOut) > new Date(data.checkIn),
+  {
+    message: 'Check-out date must be after check-in date',
+    path: ['checkOut'],
+  }
+)
+
+export const quickReservationSchema = z.object({
+  apartmentId: z.string().uuid('Invalid apartment ID'),
+  checkIn: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid check-in date'),
+  checkOut: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid check-out date'),
+  guestName: z.string().min(1, 'Guest name is required').max(100, 'Guest name too long'),
+  guestCount: z.number().int().min(1, 'Guest count must be at least 1').max(50, 'Guest count too high'),
+  platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com']),
+  totalPrice: z.number().min(0, 'Total price cannot be negative').max(999999, 'Total price too high'),
+  notes: z.string().max(1000, 'Notes too long').optional(),
+}).refine(
+  (data) => new Date(data.checkOut) > new Date(data.checkIn),
+  {
+    message: 'Check-out date must be after check-in date',
+    path: ['checkOut'],
+  }
+)
+
+export const calendarStatsSchema = z.object({
+  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid start date'),
+  endDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid end date'),
+  apartmentIds: z.array(z.string().uuid()).optional(),
+}).refine(
+  (data) => new Date(data.endDate) >= new Date(data.startDate),
+  {
+    message: 'End date must be after or equal to start date',
+    path: ['endDate'],
+  }
+)
+
 // Type exports
 export type SignUpInput = z.infer<typeof signUpSchema>
 export type SignInInput = z.infer<typeof signInSchema>
@@ -174,3 +231,7 @@ export type DateRangeInput = z.infer<typeof dateRangeSchema>
 export type ApartmentFilterInput = z.infer<typeof apartmentFilterSchema>
 export type ReservationFilterInput = z.infer<typeof reservationFilterSchema>
 export type CleaningFilterInput = z.infer<typeof cleaningFilterSchema>
+export type CalendarFiltersInput = z.infer<typeof calendarFiltersSchema>
+export type AvailabilityCheckInput = z.infer<typeof availabilityCheckSchema>
+export type QuickReservationInput = z.infer<typeof quickReservationSchema>
+export type CalendarStatsInput = z.infer<typeof calendarStatsSchema>

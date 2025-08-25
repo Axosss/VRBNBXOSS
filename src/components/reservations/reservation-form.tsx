@@ -89,6 +89,7 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
     email: '',
     phone: ''
   })
+  const [checkAvailabilityTimeout, setCheckAvailabilityTimeout] = useState<NodeJS.Timeout | null>(null)
 
   const { apartments, fetchApartments } = useApartmentStore()
   const { checkAvailability } = useReservationStore()
@@ -122,6 +123,33 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
   useEffect(() => {
     fetchApartments({ limit: 100 })
   }, [fetchApartments])
+
+  // Watch for date changes and reset availability check
+  useEffect(() => {
+    // Reset availability when dates or apartment changes
+    setAvailabilityChecked(false)
+    setAvailabilityError(null)
+
+    // Clear existing timeout
+    if (checkAvailabilityTimeout) {
+      clearTimeout(checkAvailabilityTimeout)
+    }
+
+    // Auto-check availability after 1.5 seconds of no changes (debounce)
+    if (selectedApartmentId && checkInDate && checkOutDate) {
+      const timeout = setTimeout(() => {
+        validateAvailability()
+      }, 1500)
+      setCheckAvailabilityTimeout(timeout)
+    }
+
+    // Cleanup
+    return () => {
+      if (checkAvailabilityTimeout) {
+        clearTimeout(checkAvailabilityTimeout)
+      }
+    }
+  }, [selectedApartmentId, checkInDate, checkOutDate])
 
   const selectedApartment = apartments.find(apt => apt.id === selectedApartmentId)
 
@@ -166,6 +194,13 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
   const handleSubmit = async (data: ReservationCreateInput) => {
     try {
       setIsSubmitting(true)
+      
+      // Re-check availability right before submission to prevent race conditions
+      const isStillAvailable = await validateAvailability()
+      if (!isStillAvailable) {
+        // Availability check failed, don't submit
+        return
+      }
       
       // Include guest data if creating new guest
       if (!data.guestId && guestData.name) {
