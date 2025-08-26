@@ -1,6 +1,6 @@
 'use client'
 
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { 
@@ -13,9 +13,7 @@ import {
   Dumbbell,
   Shield,
   X,
-  Plus,
-  Eye,
-  EyeOff
+  Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -67,9 +65,15 @@ export function ApartmentForm({
   submitLabel = 'Save Property',
   isEdit = false,
 }: ApartmentFormProps) {
-  const [showWifiPassword, setShowWifiPassword] = useState(false)
-  const [showDoorCode, setShowDoorCode] = useState(false)
-  const [showMailboxCode, setShowMailboxCode] = useState(false)
+  const [additionalCodesArray, setAdditionalCodesArray] = useState<Array<{id: string, name: string, code: string}>>(
+    initialData?.accessCodes?.additional 
+      ? Object.entries(initialData.accessCodes.additional).map(([name, code], index) => ({
+          id: `code-${index}`,
+          name,
+          code: code as string
+        }))
+      : []
+  )
   
   const schema = isEdit ? apartmentUpdateSchema : apartmentCreateSchema
   
@@ -100,10 +104,19 @@ export function ApartmentForm({
     },
   })
 
-  const { fields: additionalCodeFields, append: appendAdditionalCode, remove: removeAdditionalCode } = useFieldArray({
-    control: form.control,
-    name: 'accessCodes.additional',
-  })
+  const addAdditionalCode = () => {
+    setAdditionalCodesArray(prev => [...prev, { id: `code-${Date.now()}`, name: '', code: '' }])
+  }
+
+  const removeAdditionalCode = (id: string) => {
+    setAdditionalCodesArray(prev => prev.filter(item => item.id !== id))
+  }
+
+  const updateAdditionalCode = (id: string, field: 'name' | 'code', value: string) => {
+    setAdditionalCodesArray(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ))
+  }
 
   const selectedAmenities = form.watch('amenities')
   
@@ -117,6 +130,14 @@ export function ApartmentForm({
   }
 
   const handleSubmit = async (data: ApartmentCreateInput) => {
+    // Convert additional codes array back to object
+    const additionalCodesObj: Record<string, string> = {}
+    additionalCodesArray.forEach(item => {
+      if (item.name && item.code) {
+        additionalCodesObj[item.name] = item.code
+      }
+    })
+
     // Clean up empty access codes
     const cleanedData = {
       ...data,
@@ -126,8 +147,8 @@ export function ApartmentForm({
           : undefined,
         door: data.accessCodes?.door || undefined,
         mailbox: data.accessCodes?.mailbox || undefined,
-        additional: data.accessCodes?.additional && Object.keys(data.accessCodes.additional).length > 0 
-          ? data.accessCodes.additional 
+        additional: Object.keys(additionalCodesObj).length > 0 
+          ? additionalCodesObj 
           : undefined,
       },
     }
@@ -382,22 +403,13 @@ export function ApartmentForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Password</FormLabel>
-                      <div className="relative">
-                        <FormControl>
-                          <Input 
-                            type={showWifiPassword ? "text" : "password"}
-                            placeholder="WiFi Password" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <button
-                          type="button"
-                          onClick={() => setShowWifiPassword(!showWifiPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showWifiPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
+                      <FormControl>
+                        <Input 
+                          type="text"
+                          placeholder="WiFi Password" 
+                          {...field} 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -412,22 +424,13 @@ export function ApartmentForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Door Code</FormLabel>
-                  <div className="relative">
-                    <FormControl>
-                      <Input 
-                        type={showDoorCode ? "text" : "password"}
-                        placeholder="Door access code" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <button
-                      type="button"
-                      onClick={() => setShowDoorCode(!showDoorCode)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showDoorCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <FormControl>
+                    <Input 
+                      type="text"
+                      placeholder="Door access code" 
+                      {...field} 
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -440,22 +443,13 @@ export function ApartmentForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Mailbox Code</FormLabel>
-                  <div className="relative">
-                    <FormControl>
-                      <Input 
-                        type={showMailboxCode ? "text" : "password"}
-                        placeholder="Mailbox access code" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <button
-                      type="button"
-                      onClick={() => setShowMailboxCode(!showMailboxCode)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showMailboxCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+                  <FormControl>
+                    <Input 
+                      type="text"
+                      placeholder="Mailbox access code" 
+                      {...field} 
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -469,7 +463,7 @@ export function ApartmentForm({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => appendAdditionalCode({ '': '' } as any)}
+                  onClick={addAdditionalCode}
                   className="gap-2"
                 >
                   <Plus className="h-4 w-4" />
@@ -477,37 +471,24 @@ export function ApartmentForm({
                 </Button>
               </div>
               
-              {Object.entries(form.watch('accessCodes.additional') || {}).map(([key, value], index) => (
-                <div key={index} className="flex gap-2">
+              {additionalCodesArray.map((item) => (
+                <div key={item.id} className="flex gap-2">
                   <Input
                     placeholder="Code name (e.g., Garage)"
-                    value={key}
-                    onChange={(e) => {
-                      const additional = { ...form.getValues('accessCodes.additional') }
-                      delete additional[key]
-                      additional[e.target.value] = value
-                      form.setValue('accessCodes.additional', additional)
-                    }}
+                    value={item.name}
+                    onChange={(e) => updateAdditionalCode(item.id, 'name', e.target.value)}
                   />
                   <Input
-                    type="password"
+                    type="text"
                     placeholder="Access code"
-                    value={value}
-                    onChange={(e) => {
-                      const additional = { ...form.getValues('accessCodes.additional') }
-                      additional[key] = e.target.value
-                      form.setValue('accessCodes.additional', additional)
-                    }}
+                    value={item.code}
+                    onChange={(e) => updateAdditionalCode(item.id, 'code', e.target.value)}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      const additional = { ...form.getValues('accessCodes.additional') }
-                      delete additional[key]
-                      form.setValue('accessCodes.additional', additional)
-                    }}
+                    onClick={() => removeAdditionalCode(item.id)}
                   >
                     <X className="h-4 w-4" />
                   </Button>

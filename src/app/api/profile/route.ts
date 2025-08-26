@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function handleProfileUpdate(request: NextRequest) {
   try {
     const body = await request.json()
     
@@ -149,4 +149,12 @@ export async function PUT(request: NextRequest) {
       status: errorResponse.statusCode 
     })
   }
+}
+
+export async function PUT(request: NextRequest) {
+  return handleProfileUpdate(request)
+}
+
+export async function PATCH(request: NextRequest) {
+  return handleProfileUpdate(request)
 }

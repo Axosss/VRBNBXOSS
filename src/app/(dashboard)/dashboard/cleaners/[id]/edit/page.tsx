@@ -85,8 +85,7 @@ export default function EditCleanerPage({ params }: CleanerEditPageProps) {
       name: '',
       email: '',
       phone: '',
-      hourlyRate: undefined,
-      flatRate: undefined,
+      rate: undefined,
       currency: 'EUR',
     },
   })
@@ -98,8 +97,7 @@ export default function EditCleanerPage({ params }: CleanerEditPageProps) {
         name: selectedCleaner.name,
         email: selectedCleaner.email || '',
         phone: selectedCleaner.phone || '',
-        hourlyRate: selectedCleaner.rate || undefined,
-        flatRate: undefined,
+        rate: selectedCleaner.rate || undefined,
         currency: selectedCleaner.currency || 'EUR',
       })
     }
@@ -133,8 +131,7 @@ export default function EditCleanerPage({ params }: CleanerEditPageProps) {
         name: data.name,
         email: data.email && data.email.trim() !== '' ? data.email : null,
         phone: data.phone && data.phone.trim() !== '' ? data.phone : null,
-        hourly_rate: data.hourlyRate || null,
-        flat_rate: data.flatRate || null,
+        rate: data.rate || null,
         currency: data.currency,
       }
 
@@ -258,13 +255,13 @@ export default function EditCleanerPage({ params }: CleanerEditPageProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="hourlyRate"
+                  name="rate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Hourly Rate</FormLabel>
+                      <FormLabel>Rate</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -277,32 +274,7 @@ export default function EditCleanerPage({ params }: CleanerEditPageProps) {
                         />
                       </FormControl>
                       <FormDescription>
-                        Per hour rate for cleaning services
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="flatRate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Flat Rate</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="150.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Fixed rate per cleaning job
+                        Rate for cleaning services
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

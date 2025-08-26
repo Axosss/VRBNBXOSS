@@ -131,8 +131,7 @@ export interface CreateCleanerData {
   name: string;
   email?: string;
   phone?: string;
-  hourly_rate?: number;
-  flat_rate?: number;
+  rate?: number;
   currency?: string;
 }
 
@@ -140,7 +139,6 @@ export interface UpdateCleanerData {
   name?: string;
   email?: string | null;
   phone?: string | null;
-  hourly_rate?: number | null;
-  flat_rate?: number | null;
+  rate?: number | null;
   currency?: string;
 }

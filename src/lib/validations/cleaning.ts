@@ -31,8 +31,7 @@ export const createCleanerSchema = z.object({
     z.string().length(0),
     z.null()
   ]).optional(),
-  hourlyRate: z.number().min(0).max(999.99).optional().nullable(),
-  flatRate: z.number().min(0).max(9999.99).optional().nullable(),
+  rate: z.number().min(0).max(9999.99).optional().nullable(),
   currency: z.string().length(3).default('EUR'),
 });
 

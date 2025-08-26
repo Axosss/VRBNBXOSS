@@ -63,7 +63,7 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
     if (!selectedReservation) return
     
     const confirmed = window.confirm(
-      `Are you sure you want to cancel the reservation for ${selectedReservation.guest?.name}? This action cannot be undone.`
+      `Are you sure you want to permanently delete the reservation for ${selectedReservation.guest?.name || 'this guest'}? This action cannot be undone.`
     )
     
     if (confirmed) {
@@ -440,26 +440,24 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
                 Edit Reservation
               </Button>
               
-              {selectedReservation.status === 'draft' && (
-                <Button
-                  onClick={handleDelete}
-                  variant="destructive"
-                  className="w-full gap-2"
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
-                    <>
-                      <LoadingSpinner className="h-4 w-4" />
-                      Cancelling...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="h-4 w-4" />
-                      Cancel Reservation
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button
+                onClick={handleDelete}
+                variant="destructive"
+                className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <LoadingSpinner className="h-4 w-4 text-white" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 text-white" />
+                    Delete Reservation
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
 

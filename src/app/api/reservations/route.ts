@@ -176,12 +176,12 @@ export async function POST(request: NextRequest) {
     }
     
     // Prepare reservation data for database (transform camelCase to snake_case)
-    const insertData = {
+    const insertData: any = {
       apartment_id: reservationData.apartmentId,
       owner_id: user.id,
-      guest_id: reservationData.guestId,
-      platform: reservationData.platform,
-      platform_reservation_id: sanitizeText(reservationData.platformReservationId),
+      guest_id: reservationData.guestId || null,
+      platform: reservationData.platform || 'direct',
+      platform_reservation_id: sanitizeText(reservationData.platformReservationId) || null,
       check_in: reservationData.checkIn,
       check_out: reservationData.checkOut,
       guest_count: reservationData.guestCount,
@@ -189,10 +189,13 @@ export async function POST(request: NextRequest) {
       cleaning_fee: reservationData.cleaningFee || 0,
       platform_fee: reservationData.platformFee || 0,
       currency: reservationData.currency || 'USD',
-      status: 'confirmed' as const,
-      notes: sanitizeText(reservationData.notes),
-      contact_info: sanitizeContactInfo(reservationData.contactInfo),
+      notes: sanitizeText(reservationData.notes) || null,
+      contact_info: sanitizeContactInfo(reservationData.contactInfo) || null,
     }
+    
+    // Debug: Check if dates are causing issue
+    console.log('Check-in date:', reservationData.checkIn, 'Type:', typeof reservationData.checkIn)
+    console.log('Check-out date:', reservationData.checkOut, 'Type:', typeof reservationData.checkOut)
     
     console.log('Inserting reservation data:', JSON.stringify(insertData, null, 2))
     
@@ -215,9 +218,184 @@ export async function POST(request: NextRequest) {
     }
     
     // Create reservation (DB triggers will handle additional validation)
-    const { data: reservation, error: insertError } = await supabase
+    console.log('About to insert with data:', JSON.stringify(insertData, null, 2))
+    console.log('Keys in insertData:', Object.keys(insertData))
+    console.log('Status field exists:', 'status' in insertData)
+    
+    // Try raw SQL insert to bypass any Supabase client issues
+    const { data: rawInsertResult, error: rawInsertError } = await supabase.rpc('insert_reservation_raw', {
+      p_apartment_id: insertData.apartment_id,
+      p_owner_id: insertData.owner_id,
+      p_guest_id: insertData.guest_id,
+      p_platform: insertData.platform,
+      p_platform_reservation_id: insertData.platform_reservation_id,
+      p_check_in: insertData.check_in,
+      p_check_out: insertData.check_out,
+      p_guest_count: insertData.guest_count,
+      p_total_price: insertData.total_price,
+      p_cleaning_fee: insertData.cleaning_fee || 0,
+      p_platform_fee: insertData.platform_fee || 0,
+      p_currency: insertData.currency || 'USD',
+      p_notes: insertData.notes,
+      p_contact_info: insertData.contact_info
+    })
+    
+    if (!rawInsertError) {
+      console.log('Raw SQL insert succeeded! ID:', rawInsertResult)
+      
+      // Fetch the created reservation
+      const { data: reservation, error: fetchError } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          apartment:apartments(id, name, address, capacity),
+          guest:guests(id, name, email, phone)
+        `)
+        .eq('id', rawInsertResult)
+        .single()
+      
+      if (!fetchError && reservation) {
+        return NextResponse.json(
+          createSuccessResponse(reservation, 'Reservation created successfully'),
+          { status: 201 }
+        )
+      }
+    }
+    
+    // Log RPC error if it exists
+    if (rawInsertError) {
+      console.log('RPC function not found or failed:', rawInsertError)
+    }
+    
+    // Try debugging: check what Supabase thinks the schema is
+    const { data: schemaInfo, error: schemaError } = await supabase
       .from('reservations')
-      .insert(insertData)
+      .select('*')
+      .limit(0)
+    
+    console.log('Schema query error:', schemaError)
+    
+    // If raw SQL failed, try standard insert with very explicit data
+    const cleanInsertData = {
+      apartment_id: insertData.apartment_id,
+      owner_id: insertData.owner_id,
+      guest_id: insertData.guest_id || null,
+      platform: insertData.platform || 'direct',
+      platform_reservation_id: insertData.platform_reservation_id || null,
+      check_in: insertData.check_in,
+      check_out: insertData.check_out,
+      guest_count: insertData.guest_count,
+      total_price: insertData.total_price,
+      cleaning_fee: insertData.cleaning_fee || 0,
+      platform_fee: insertData.platform_fee || 0,
+      currency: insertData.currency || 'USD',
+      notes: insertData.notes || null,
+      contact_info: insertData.contact_info || null
+    }
+    
+    // IMPORTANT: Do NOT include status field at all
+    console.log('Clean insert data keys:', Object.keys(cleanInsertData))
+    console.log('Clean insert data:', JSON.stringify(cleanInsertData, null, 2))
+    
+    // Try a completely different approach - use upsert instead of insert
+    const { data: upsertResult, error: upsertError } = await supabase
+      .from('reservations')
+      .upsert({
+        ...cleanInsertData,
+        id: crypto.randomUUID() // Generate our own ID
+      })
+      .select('id')
+      .single()
+    
+    if (!upsertError) {
+      console.log('UPSERT WORKED! ID:', upsertResult.id)
+      
+      // Fetch the created reservation
+      const { data: reservation, error: fetchError } = await supabase
+        .from('reservations')
+        .select(`
+          *,
+          apartment:apartments(id, name, address, capacity),
+          guest:guests(id, name, email, phone)
+        `)
+        .eq('id', upsertResult.id)
+        .single()
+      
+      if (!fetchError && reservation) {
+        return NextResponse.json(
+          createSuccessResponse(reservation, 'Reservation created successfully'),
+          { status: 201 }
+        )
+      }
+    }
+    
+    console.log('Upsert also failed:', upsertError)
+    
+    // If upsert failed, try regular insert
+    const { data: insertResult, error: insertError } = await supabase
+      .from('reservations')
+      .insert(cleanInsertData)
+      .select('id')
+      .single()
+    
+    if (insertError) {
+      console.error('Insert error:', insertError)
+      console.error('Full insert error details:', JSON.stringify(insertError, null, 2))
+      console.error('Insert data that caused error:', JSON.stringify(insertData, null, 2))
+      
+      // Handle specific DB errors
+      if (insertError.message.includes('Double booking detected')) {
+        throw new AppError('This time slot conflicts with an existing reservation', 409)
+      }
+      if (insertError.message.includes('Guest count') && insertError.message.includes('exceeds apartment capacity')) {
+        throw new AppError(`Guest count exceeds apartment capacity (${apartment.capacity})`, 400)
+      }
+      if (insertError.message.includes('archived')) {
+        // There seems to be a database issue with the status enum
+        console.error('CRITICAL: Database is returning "archived" error even though no status was sent')
+        console.error('Attempting workaround by explicitly setting status to confirmed')
+        
+        // Try again with explicit status
+        const retryData = { ...insertData, status: 'confirmed' }
+        const { data: retryReservation, error: retryError } = await supabase
+          .from('reservations')
+          .insert(retryData)
+          .select(`
+            *,
+            apartment:apartments(
+              id,
+              name,
+              address,
+              capacity
+            ),
+            guest:guests(
+              id,
+              name,
+              email,
+              phone
+            )
+          `)
+          .single()
+        
+        if (retryError) {
+          console.error('Retry also failed:', retryError)
+          throw new AppError('Unable to create reservation due to database issue. Please try again.', 500)
+        }
+        
+        console.log('Created reservation with retry:', JSON.stringify(retryReservation, null, 2))
+        
+        return NextResponse.json(
+          createSuccessResponse(retryReservation, 'Reservation created successfully'),
+          { status: 201 }
+        )
+      }
+      
+      throw new AppError(insertError.message, 400)
+    }
+    
+    // If insert succeeded, fetch the full reservation with relations
+    const { data: reservation, error: fetchError } = await supabase
+      .from('reservations')
       .select(`
         *,
         apartment:apartments(
@@ -233,20 +411,16 @@ export async function POST(request: NextRequest) {
           phone
         )
       `)
+      .eq('id', insertResult.id)
       .single()
     
-    if (insertError) {
-      console.error('Insert error:', insertError)
-      
-      // Handle specific DB errors
-      if (insertError.message.includes('Double booking detected')) {
-        throw new AppError('This time slot conflicts with an existing reservation', 409)
-      }
-      if (insertError.message.includes('Guest count') && insertError.message.includes('exceeds apartment capacity')) {
-        throw new AppError(`Guest count exceeds apartment capacity (${apartment.capacity})`, 400)
-      }
-      
-      throw new AppError(insertError.message, 400)
+    if (fetchError) {
+      console.error('Failed to fetch created reservation:', fetchError)
+      // Still return success with minimal data since insert worked
+      return NextResponse.json(
+        createSuccessResponse({ id: insertResult.id }, 'Reservation created successfully'),
+        { status: 201 }
+      )
     }
     
     console.log('Created reservation:', JSON.stringify(reservation, null, 2))

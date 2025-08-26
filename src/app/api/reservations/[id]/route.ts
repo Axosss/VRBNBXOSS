@@ -58,7 +58,8 @@ export async function GET(
         ),
         cleanings(
           id,
-          scheduled_date,
+          scheduled_start,
+          scheduled_end,
           status,
           cleaner:cleaners(
             id,
@@ -300,14 +301,39 @@ export async function DELETE(
       throw new AppError('Failed to fetch reservation', 500)
     }
     
-    // Soft delete: Update status to cancelled instead of hard delete
-    // This preserves historical data and any linked cleanings
+    // Check for linked cleanings
+    const { data: linkedCleanings, error: cleaningsError } = await supabase
+      .from('cleanings')
+      .select('id, status')
+      .eq('reservation_id', id)
+    
+    if (cleaningsError) {
+      console.error('Error fetching linked cleanings:', cleaningsError)
+    }
+    
+    // Handle linked cleanings before deletion
+    if (linkedCleanings && linkedCleanings.length > 0) {
+      for (const cleaning of linkedCleanings) {
+        if (cleaning.status === 'scheduled' || cleaning.status === 'needed') {
+          // Delete scheduled/needed cleanings as they haven't been performed
+          const { error: deleteCleaningError } = await supabase
+            .from('cleanings')
+            .delete()
+            .eq('id', cleaning.id)
+          
+          if (deleteCleaningError) {
+            console.error(`Failed to delete cleaning ${cleaning.id}:`, deleteCleaningError)
+          }
+        }
+        // Completed cleanings will have their reservation_id set to NULL automatically
+        // thanks to the ON DELETE SET NULL constraint
+      }
+    }
+    
+    // Hard delete: Actually remove the reservation from database
     const { error: deleteError } = await supabase
       .from('reservations')
-      .update({ 
-        status: 'cancelled',
-        updated_at: new Date().toISOString()
-      })
+      .delete()
       .eq('id', id)
       .eq('owner_id', user.id)
     
@@ -316,10 +342,10 @@ export async function DELETE(
       throw new AppError(deleteError.message, 500)
     }
     
-    console.log('Successfully cancelled reservation:', id)
+    console.log('Successfully deleted reservation:', id)
     
     return NextResponse.json(
-      createSuccessResponse(null, 'Reservation cancelled successfully')
+      createSuccessResponse(null, 'Reservation deleted successfully')
     )
     
   } catch (error) {

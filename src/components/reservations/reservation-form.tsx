@@ -324,7 +324,6 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
                           <Input
                             type="date"
                             {...field}
-                            min={new Date().toISOString().split('T')[0]}
                           />
                         </FormControl>
                         <FormMessage />
@@ -342,7 +341,7 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
                           <Input
                             type="date"
                             {...field}
-                            min={checkInDate || new Date().toISOString().split('T')[0]}
+                            min={checkInDate}
                           />
                         </FormControl>
                         <FormMessage />
@@ -416,7 +415,10 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
                               min="1"
                               max={selectedApartment?.capacity || 10}
                               {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value)
+                                field.onChange(isNaN(value) ? 1 : value)
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -537,7 +539,11 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
                             step="0.01"
                             min="0"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value)
+                              field.onChange(isNaN(value) ? 0 : value)
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -557,7 +563,11 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
                             step="0.01"
                             min="0"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value)
+                              field.onChange(isNaN(value) ? 0 : value)
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -577,7 +587,11 @@ export function ReservationForm({ initialData, mode, onSubmit, onCancel }: Reser
                             step="0.01"
                             min="0"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const value = parseFloat(e.target.value)
+                              field.onChange(isNaN(value) ? 0 : value)
+                            }}
                           />
                         </FormControl>
                         <FormMessage />

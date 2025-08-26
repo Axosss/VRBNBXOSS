@@ -103,9 +103,8 @@ export async function PUT(
     if (updateData.email !== undefined) cleanedData.email = updateData.email ? sanitizeText(updateData.email) : null;
     if (updateData.phone !== undefined) cleanedData.phone = updateData.phone ? sanitizeText(updateData.phone) : null;
     
-    // Handle rate fields separately
-    if (updateData.hourlyRate !== undefined) cleanedData.hourly_rate = updateData.hourlyRate;
-    if (updateData.flatRate !== undefined) cleanedData.flat_rate = updateData.flatRate;
+    // Handle rate field
+    if (updateData.rate !== undefined) cleanedData.rate = updateData.rate;
     
     // Handle currency field
     if (updateData.currency !== undefined) cleanedData.currency = updateData.currency;
