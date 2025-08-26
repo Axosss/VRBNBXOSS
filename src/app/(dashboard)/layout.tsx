@@ -13,7 +13,9 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  User
+  User,
+  Sparkles,
+  UserCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth-store'
@@ -28,6 +30,8 @@ const navigation = [
   { name: 'Calendar', href: '/dashboard/calendar', icon: Calendar },
   { name: 'Reservations', href: '/dashboard/reservations', icon: ClipboardList },
   { name: 'Apartments', href: '/dashboard/apartments', icon: Building },
+  { name: 'Cleaning', href: '/dashboard/cleaning', icon: Sparkles },
+  { name: 'Cleaners', href: '/dashboard/cleaners', icon: UserCheck },
   { name: 'Guests', href: '/dashboard/guests', icon: Users },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
@@ -61,13 +65,13 @@ export default function DashboardLayout({
             className="fixed inset-0 flex z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           >
-            <div className="fixed inset-0 bg-background/80" />
+            <div className="fixed inset-0 bg-black/50" />
           </div>
         )}
 
         {/* Sidebar */}
         <div className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}>
           <div className="flex items-center justify-between h-16 px-6 border-b border-border">
@@ -137,7 +141,7 @@ export default function DashboardLayout({
         {/* Main content */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Top bar */}
-          <header className="bg-card border-b border-border">
+          <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between h-16 px-6">
               <Button
                 variant="ghost"

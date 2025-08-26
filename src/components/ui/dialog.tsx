@@ -11,6 +11,12 @@ interface DialogProps {
   children: React.ReactNode
 }
 
+interface DialogTriggerProps {
+  asChild?: boolean
+  children: React.ReactNode
+  onClick?: () => void
+}
+
 interface DialogContentProps {
   className?: string
   children: React.ReactNode
@@ -42,7 +48,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div 
-        className="fixed inset-0 bg-black/50"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={() => onOpenChange(false)}
       />
       <div className="relative z-50 w-full max-w-md mx-4">
@@ -52,10 +58,24 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
   )
 }
 
+export function DialogTrigger({ asChild, children, onClick }: DialogTriggerProps) {
+  if (asChild) {
+    return React.cloneElement(children as React.ReactElement, {
+      onClick
+    })
+  }
+  
+  return (
+    <button onClick={onClick} type="button">
+      {children}
+    </button>
+  )
+}
+
 export function DialogContent({ className, children }: DialogContentProps) {
   return (
     <div className={cn(
-      'bg-background border border-border rounded-lg shadow-lg p-6 relative',
+      'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-6 relative',
       className
     )}>
       {children}

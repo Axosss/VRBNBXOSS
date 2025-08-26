@@ -10,13 +10,21 @@ export default function Home() {
   const { isAuthenticated, isLoading } = useAuthStore()
 
   useEffect(() => {
+    // Add a timeout to force redirect if auth check takes too long
+    const timeout = setTimeout(() => {
+      router.push('/login')
+    }, 3000) // 3 second timeout
+
     if (!isLoading) {
+      clearTimeout(timeout)
       if (isAuthenticated) {
         router.push('/dashboard')
       } else {
         router.push('/login')
       }
     }
+
+    return () => clearTimeout(timeout)
   }, [isAuthenticated, isLoading, router])
 
   return (
