@@ -10,14 +10,25 @@
 ## 📊 État Global de la Migration
 
 ### Vue d'ensemble
-- ✅ **Phase 1 : Infrastructure** - 100% (7/7 tâches) ✅
-- ✅ **Phase 2 : Feature Reservations** - 100% (11/11 tâches) ✅ COMPLÉTÉ !
-- ✅ **Phase 3 : Feature Apartments** - 100% (6/6 tâches) ✅
-- ✅ **Phase 4 : Feature Cleanings** - 100% (6/6 tâches) ✅
-- ✅ **Phase 5 : Features Guests/Cleaners** - 100% (5/5 tâches) ✅
-- 🟡 **Phase 6 : Tests & Finalisation** - 25% (1/4 tâches)
+- ✅ **Phase 1 : Infrastructure** - 100% (6/6 tâches) ✅
+- ✅ **Phase 2 : Feature Reservations** - 100% (11/11 tâches) ✅ COMPLÉTÉ ET EN PRODUCTION !
+- 🟡 **Phase 3 : Feature Apartments** - 50% (3/6 tâches) - Mapper prêt, migration à faire
+- 🟡 **Phase 4 : Feature Cleanings** - 50% (3/6 tâches) - Mapper prêt, migration à faire
+- 🟡 **Phase 5 : Features Guests/Cleaners** - 40% (2/5 tâches) - Mappers prêts, migration à faire
+- 🟡 **Phase 6 : Tests & Finalisation** - 50% (2/4 tâches)
 
-**Progression Totale : 36/39 tâches (92%)**
+**Progression Totale : 27/38 tâches (71%)**
+
+**Ce qui est FAIT et EN PRODUCTION :**
+- ✅ Infrastructure complète des mappers
+- ✅ Tous les mappers créés (Reservation, Apartment, Cleaning, Guest, Cleaner)
+- ✅ API Reservations utilise les mappers en production
+- ✅ Documentation complète
+
+**Ce qui reste à faire (Phase 2 - plus tard) :**
+- Migration des APIs Apartments, Cleanings, Guests, Cleaners
+- Tests unitaires pour tous les mappers
+- Conversion complète vers camelCase
 
 ---
 
@@ -71,34 +82,34 @@
 - [x] Migrer l'API `/api/reservations` pour utiliser les mappers ✅
 - [x] Migrer l'API `/api/reservations/[id]` pour utiliser les mappers ✅
 
-### Phase 3 : Migration Apartments
+### Phase 3 : Migration Apartments (Mapper prêt, migration à faire)
 - [x] Créer les types `ApartmentDB` (snake_case)
 - [x] Créer `/src/lib/mappers/apartment.mapper.ts`
 - [x] Résoudre le problème des photos (TEXT[] vs objets)
-- [ ] Créer les tests unitaires
-- [ ] Migrer les composants apartments
-- [ ] Valider
+- [ ] Créer les tests unitaires (à faire plus tard)
+- [ ] Migrer les composants apartments (à faire plus tard)
+- [ ] Valider (à faire plus tard)
 
-### Phase 4 : Migration Cleanings
+### Phase 4 : Migration Cleanings (Mapper prêt, migration à faire)
 - [x] Créer les types `CleaningDB` (snake_case)
 - [x] Créer `/src/lib/mappers/cleaning.mapper.ts`
 - [x] Gérer la différence scheduled_date vs scheduled_start/end
-- [ ] Créer les tests unitaires
-- [ ] Migrer les composants cleanings
-- [ ] Valider
+- [ ] Créer les tests unitaires (à faire plus tard)
+- [ ] Migrer les composants cleanings (à faire plus tard)
+- [ ] Valider (à faire plus tard)
 
-### Phase 5 : Migration Guests & Cleaners
+### Phase 5 : Migration Guests & Cleaners (Mappers prêts, migration à faire)
 - [x] Créer `/src/lib/mappers/guest.mapper.ts`
 - [x] Créer `/src/lib/mappers/cleaner.mapper.ts`
-- [ ] Tests unitaires
-- [ ] Migrer les composants
-- [ ] Valider
+- [ ] Tests unitaires (à faire plus tard)
+- [ ] Migrer les composants (à faire plus tard)
+- [ ] Valider (à faire plus tard)
 
 ### Phase 6 : Nettoyage & Finalisation
-- [ ] Supprimer le code legacy
-- [ ] Mettre à jour tous les imports
-- [ ] Documentation finale
-- [ ] Code review complet
+- [x] Supprimer le code legacy (fichiers de test supprimés) ✅
+- [ ] Mettre à jour tous les imports (Phase 2 - après migration complète)
+- [x] Documentation finale ✅
+- [ ] Code review complet (à faire en Phase 2)
 
 ---
 

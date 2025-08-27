@@ -1,6 +1,22 @@
 # CLAUDE.md
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+
+## Git Commit Guidelines
+- Please use Conventional Commits formatting for git commits.
+- Please use Conventional Branch naming (prefix-based branch naming convention)
+- Please do not mention yourself (Claude) as a co-author when committing, or include any links to Claude Code
+## Visual Development Memories
+- Please use the playwright MCP server when making visual changes to the front-end to check your work
+## Guidance Memories
+- Please ask for clarification upfront, upon the initial prompts, when you need more direction.
+## Linting and Code Quality
+- Please run 'npm run lint' after completing large additions or refactors to ensure adherence to syntactic best practices.
+## CLI Tooling Memories
+- Please use the 'gh' CLI tool when appropriate, create issues, open pull requests, read comments, etc.
+## Documentation Memories
+- Please use context to find the relevant, up-to-date documentation when working with 3rd party libraries, packages, frameworks, etc as needed.
+
 ## Project Overview
 VRBNBXOSS is a comprehensive rental property management dashboard for property owners managing multiple apartments across Airbnb, VRBO, and direct bookings. The system helps track reservations, schedule cleanings, manage guest information, and analyze business performance.
 
