@@ -1,7 +1,7 @@
 // Cleaning Management Types
 
 export type CleaningStatus = 'needed' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'verified';
-export type CleaningType = 'standard' | 'deep' | 'maintenance' | 'checkout' | 'checkin';
+export type CleaningType = 'standard' | 'checkout';
 
 export interface Cleaner {
   id: string;

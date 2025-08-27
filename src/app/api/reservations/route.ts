@@ -4,6 +4,7 @@ import { reservationCreateSchema, paginationSchema, reservationFilterSchema } fr
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID } from '@/lib/utils'
 import { sanitizeText, sanitizeContactInfo, sanitizeSearchQuery } from '@/lib/utils/sanitize'
 import { rateLimit } from '@/middleware/rate-limit'
+import { dbMappers } from '@/lib/mappers'
 import { z } from 'zod'
 
 export async function GET(request: NextRequest) {
@@ -101,9 +102,12 @@ export async function GET(request: NextRequest) {
     
     console.log(`Found ${reservations?.length || 0} reservations out of ${count} total`)
     
+    // Apply mapper to transform data from DB format
+    const mappedReservations = reservations ? dbMappers.reservation.multipleWithRelationsFromDB(reservations) : []
+    
     return NextResponse.json(
       createSuccessResponse({
-        reservations: reservations || [],
+        reservations: mappedReservations,
         pagination: {
           page: pagination.page,
           limit: pagination.limit,
@@ -255,8 +259,9 @@ export async function POST(request: NextRequest) {
         .single()
       
       if (!fetchError && reservation) {
+        const mappedReservation = dbMappers.reservation.withRelationsFromDB(reservation)
         return NextResponse.json(
-          createSuccessResponse(reservation, 'Reservation created successfully'),
+          createSuccessResponse(mappedReservation, 'Reservation created successfully'),
           { status: 201 }
         )
       }
@@ -322,8 +327,9 @@ export async function POST(request: NextRequest) {
         .single()
       
       if (!fetchError && reservation) {
+        const mappedReservation = dbMappers.reservation.withRelationsFromDB(reservation)
         return NextResponse.json(
-          createSuccessResponse(reservation, 'Reservation created successfully'),
+          createSuccessResponse(mappedReservation, 'Reservation created successfully'),
           { status: 201 }
         )
       }
@@ -384,8 +390,9 @@ export async function POST(request: NextRequest) {
         
         console.log('Created reservation with retry:', JSON.stringify(retryReservation, null, 2))
         
+        const mappedRetryReservation = dbMappers.reservation.withRelationsFromDB(retryReservation)
         return NextResponse.json(
-          createSuccessResponse(retryReservation, 'Reservation created successfully'),
+          createSuccessResponse(mappedRetryReservation, 'Reservation created successfully'),
           { status: 201 }
         )
       }
@@ -425,8 +432,9 @@ export async function POST(request: NextRequest) {
     
     console.log('Created reservation:', JSON.stringify(reservation, null, 2))
     
+    const mappedReservation = dbMappers.reservation.withRelationsFromDB(reservation)
     return NextResponse.json(
-      createSuccessResponse(reservation, 'Reservation created successfully'),
+      createSuccessResponse(mappedReservation, 'Reservation created successfully'),
       { status: 201 }
     )
     

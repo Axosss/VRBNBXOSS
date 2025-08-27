@@ -138,9 +138,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('POST /api/cleanings - Request body:', JSON.stringify(body, null, 2));
+    
+    // Transform snake_case to camelCase for validation
+    const transformedBody = {
+      apartmentId: body.apartment_id,
+      cleanerId: body.cleaner_id,
+      reservationId: body.reservation_id,
+      scheduledStart: body.scheduled_start,
+      scheduledEnd: body.scheduled_end,
+      cleaningType: body.cleaning_type || 'standard',
+      instructions: body.instructions,
+      supplies: body.supplies,
+      cost: body.cost,
+      currency: body.currency || 'EUR'
+    };
     
     // Validate input
-    const cleaningData = createCleaningSchema.parse(body);
+    const cleaningData = createCleaningSchema.parse(transformedBody);
     
     const supabase = await createClient();
     
@@ -269,8 +284,12 @@ export async function POST(request: NextRequest) {
     }
     
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
+      const errorMessage = error.errors?.length 
+        ? error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        : 'Invalid input data';
       return NextResponse.json(
-        createErrorResponse('Invalid input data', 400),
+        createErrorResponse(`Validation failed: ${errorMessage}`, 400),
         { status: 400 }
       );
     }

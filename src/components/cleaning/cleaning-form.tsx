@@ -27,7 +27,7 @@ import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { CleanerSelector } from './cleaner-selector'
 import { useApartmentStore } from '@/lib/stores/apartment-store'
 import { createCleaningSchema, updateCleaningSchema } from '@/lib/validations/cleaning'
-import type { CreateCleaningData, UpdateCleaningData, CleaningType, Cleaning } from '@/types/cleaning'
+import type { CreateCleaningData, UpdateCleaningData, Cleaning } from '@/types/cleaning'
 import { z } from 'zod'
 
 interface CleaningFormProps {
@@ -69,13 +69,6 @@ const updateFormSchema = updateCleaningSchema.transform(data => ({
 
 type FormData = z.infer<typeof createCleaningSchema> | z.infer<typeof updateCleaningSchema>
 
-const cleaningTypes: { value: CleaningType; label: string; description: string }[] = [
-  { value: 'standard', label: 'Standard Cleaning', description: 'Regular cleaning service' },
-  { value: 'deep', label: 'Deep Cleaning', description: 'Thorough cleaning with extra attention to detail' },
-  { value: 'checkout', label: 'Checkout Cleaning', description: 'Cleaning after guest checkout' },
-  { value: 'checkin', label: 'Check-in Prep', description: 'Preparation cleaning before guest arrival' },
-  { value: 'maintenance', label: 'Maintenance', description: 'Cleaning during maintenance or repairs' }
-]
 
 export function CleaningForm({ initialData, mode, onSubmit, onCancel }: CleaningFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -90,7 +83,7 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
           reservationId: initialData?.reservation_id || null,
           scheduledStart: initialData?.scheduled_start || '',
           scheduledEnd: initialData?.scheduled_end || '',
-          cleaningType: (initialData?.cleaning_type as CleaningType) || 'standard',
+          cleaningType: 'standard',
           instructions: initialData?.instructions || '',
           supplies: initialData?.supplies || {},
           cost: initialData?.cost || null,
@@ -103,7 +96,7 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
           actualStart: initialData?.actual_start || null,
           actualEnd: initialData?.actual_end || null,
           status: initialData?.status || 'needed',
-          cleaningType: (initialData?.cleaning_type as CleaningType) || 'standard',
+          cleaningType: 'standard',
           instructions: initialData?.instructions || '',
           supplies: initialData?.supplies || {},
           photos: initialData?.photos || [],
@@ -123,14 +116,14 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
 
   const selectedApartment = apartments.find(apt => apt.id === selectedApartmentId)
 
-  // Auto-calculate end time when start time changes (default 2 hours duration)
+  // Auto-calculate end time when start time changes ONLY if end time is empty
   useEffect(() => {
-    if (scheduledStart && (!watchedValues.scheduledEnd || mode === 'create')) {
+    if (scheduledStart && !watchedValues.scheduledEnd) {
       const startDate = new Date(scheduledStart)
       const endDate = new Date(startDate.getTime() + (2 * 60 * 60 * 1000)) // Add 2 hours
       form.setValue('scheduledEnd', endDate.toISOString().slice(0, 16))
     }
-  }, [scheduledStart, form, mode, watchedValues.scheduledEnd])
+  }, [scheduledStart]) // Remove watchedValues.scheduledEnd from dependencies to prevent overriding
 
   const handleSubmit = async (data: FormData) => {
     try {
@@ -242,7 +235,6 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
                         <Input
                           type="datetime-local"
                           {...field}
-                          min={new Date().toISOString().slice(0, 16)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -260,7 +252,6 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
                         <Input
                           type="datetime-local"
                           {...field}
-                          min={scheduledStart || new Date().toISOString().slice(0, 16)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -280,33 +271,6 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <FormField
-                control={form.control}
-                name="cleaningType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cleaning Type</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cleaningTypes.map(type => (
-                            <SelectItem key={type.value} value={type.value}>
-                              <div className="space-y-1">
-                                <div className="font-medium">{type.label}</div>
-                                <div className="text-sm text-muted-foreground">{type.description}</div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

@@ -12,10 +12,7 @@ export const cleaningStatusEnum = z.enum([
 
 export const cleaningTypeEnum = z.enum([
   'standard',
-  'deep',
-  'maintenance',
-  'checkout',
-  'checkin'
+  'checkout'
 ]);
 
 // Cleaner schemas
@@ -51,8 +48,8 @@ export const createCleaningSchema = z.object({
   apartmentId: z.string().uuid('Invalid apartment ID'),
   cleanerId: z.string().uuid('Invalid cleaner ID').optional().nullable(),
   reservationId: z.string().uuid('Invalid reservation ID').optional().nullable(),
-  scheduledStart: z.string().datetime({ offset: true }),
-  scheduledEnd: z.string().datetime({ offset: true }),
+  scheduledStart: z.string().min(1, 'Scheduled start is required'),
+  scheduledEnd: z.string().min(1, 'Scheduled end is required'),
   cleaningType: cleaningTypeEnum.default('standard'),
   instructions: z.string().max(1000).optional().nullable(),
   supplies: z.record(z.any()).optional(),
@@ -68,10 +65,10 @@ export const createCleaningSchema = z.object({
 
 export const updateCleaningSchema = z.object({
   cleanerId: z.string().uuid('Invalid cleaner ID').optional().nullable(),
-  scheduledStart: z.string().datetime({ offset: true }).optional(),
-  scheduledEnd: z.string().datetime({ offset: true }).optional(),
-  actualStart: z.string().datetime({ offset: true }).optional().nullable(),
-  actualEnd: z.string().datetime({ offset: true }).optional().nullable(),
+  scheduledStart: z.string().optional(),
+  scheduledEnd: z.string().optional(),
+  actualStart: z.string().optional().nullable(),
+  actualEnd: z.string().optional().nullable(),
   status: cleaningStatusEnum.optional(),
   cleaningType: cleaningTypeEnum.optional(),
   instructions: z.string().max(1000).optional().nullable(),

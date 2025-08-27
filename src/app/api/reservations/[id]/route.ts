@@ -4,6 +4,7 @@ import { reservationUpdateSchema } from '@/lib/validations'
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID, getDaysBetween } from '@/lib/utils'
 import { sanitizeText, sanitizeContactInfo } from '@/lib/utils/sanitize'
 import { rateLimit } from '@/middleware/rate-limit'
+import { dbMappers } from '@/lib/mappers'
 
 export async function GET(
   request: NextRequest,
@@ -95,8 +96,11 @@ export async function GET(
     
     console.log('Found reservation:', JSON.stringify(enrichedReservation.id, null, 2))
     
+    // Apply mapper to transform data
+    const mappedReservation = dbMappers.reservation.withRelationsFromDB(enrichedReservation)
+    
     return NextResponse.json(
-      createSuccessResponse(enrichedReservation, 'Reservation retrieved successfully')
+      createSuccessResponse(mappedReservation, 'Reservation retrieved successfully')
     )
     
   } catch (error) {
@@ -247,8 +251,11 @@ export async function PUT(
     
     console.log('Updated reservation:', JSON.stringify(updatedReservation.id, null, 2))
     
+    // Apply mapper to transform data
+    const mappedReservation = dbMappers.reservation.withRelationsFromDB(updatedReservation)
+    
     return NextResponse.json(
-      createSuccessResponse(updatedReservation, 'Reservation updated successfully')
+      createSuccessResponse(mappedReservation, 'Reservation updated successfully')
     )
     
   } catch (error) {
