@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, Grid3X3, List, Calendar, Filter, Download, AlertCircle } from 'lucide-react'
+import { Plus, Search, Grid3X3, List, Calendar, Filter, Download, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -29,6 +29,7 @@ export default function ReservationsPage() {
   const [apartmentFilter, setApartmentFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('created_at')
   const [sortOrder, setSortOrder] = useState<string>('desc')
+  const [currentPage, setCurrentPage] = useState<number>(1)
   
   const { 
     reservations,
@@ -62,29 +63,43 @@ export default function ReservationsPage() {
     filters.sortOrder = sortOrder
     setFilters(filters)
     
+    // Reset to page 1 when filters change
+    setCurrentPage(1)
+    
     // Debounce search
     const timeoutId = setTimeout(() => {
-      fetchReservations({ page: 1, limit: 12, ...filters })
+      fetchReservations({ page: 1, limit: 100, ...filters })
     }, 300)
     
     return () => clearTimeout(timeoutId)
   }, [searchTerm, statusFilter, platformFilter, apartmentFilter, sortBy, sortOrder, setFilters, fetchReservations])
 
-  const handleLoadMore = () => {
-    if (pagination && pagination.page < pagination.totalPages) {
-      const filters: any = {}
-      if (searchTerm) filters.search = searchTerm
-      if (statusFilter !== 'all') filters.status = statusFilter
-      if (platformFilter !== 'all') filters.platform = platformFilter
-      if (apartmentFilter !== 'all') filters.apartmentId = apartmentFilter
-      filters.sortBy = sortBy
-      filters.sortOrder = sortOrder
-      
-      fetchReservations({ 
-        page: pagination.page + 1, 
-        limit: 12, 
-        ...filters 
-      })
+  const handlePageChange = (newPage: number) => {
+    const filters: any = {}
+    if (searchTerm) filters.search = searchTerm
+    if (statusFilter !== 'all') filters.status = statusFilter
+    if (platformFilter !== 'all') filters.platform = platformFilter
+    if (apartmentFilter !== 'all') filters.apartmentId = apartmentFilter
+    filters.sortBy = sortBy
+    filters.sortOrder = sortOrder
+    
+    setCurrentPage(newPage)
+    fetchReservations({ 
+      page: newPage, 
+      limit: 100, 
+      ...filters 
+    })
+  }
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (pagination && currentPage < pagination.totalPages) {
+      handlePageChange(currentPage + 1)
     }
   }
 
@@ -332,23 +347,37 @@ export default function ReservationsPage() {
             ))}
           </div>
 
-          {/* Load More */}
-          {pagination && pagination.page < pagination.totalPages && (
-            <div className="flex justify-center">
-              <Button 
-                variant="outline" 
-                onClick={handleLoadMore}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <LoadingSpinner className="h-4 w-4 mr-2" />
-                    Loading...
-                  </>
-                ) : (
-                  'Load More'
-                )}
-              </Button>
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between border-t pt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * 100) + 1} to {Math.min(currentPage * 100, pagination.total)} of {pagination.total} reservations
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handlePrevious}
+                  disabled={currentPage === 1 || isLoading}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="px-2">
+                    Page {currentPage} of {pagination.totalPages}
+                  </span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleNext}
+                  disabled={currentPage >= pagination.totalPages || isLoading}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </>
