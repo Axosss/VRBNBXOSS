@@ -10,7 +10,7 @@ export interface UserProfile {
   avatarUrl: string | null
   role: string
   timezone: string
-  settings: Record<string, any>
+  settings: Record<string, unknown>
 }
 
 export interface AuthState {

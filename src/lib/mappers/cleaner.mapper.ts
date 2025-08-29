@@ -15,8 +15,8 @@ export function mapCleanerFromDB(db: CleanerDB): Cleaner {
   return {
     id: db.id,
     
-    // ID field (keeping snake_case for Phase 1)
-    owner_id: db.owner_id, // TODO: Phase 2 - Change to ownerId
+    // ID field - now in camelCase
+    ownerId: db.owner_id,
     
     // Basic info
     name: db.name,
@@ -24,13 +24,17 @@ export function mapCleanerFromDB(db: CleanerDB): Cleaner {
     phone: db.phone,
     rate: db.rate,
     
-    // Currency field doesn't exist in DB yet
-    // Will need migration to add this field
-    currency: null, // TODO: Add to DB migration
+    // Additional fields from DB
+    active: db.active,
+    services: db.services || [],
+    rating: db.rating,
+    currency: db.currency || 'EUR',
+    hourlyRate: db.rate, // Alias for compatibility
+    flatRate: null, // Not in current DB
     
-    // Timestamps (keeping snake_case for Phase 1)
-    created_at: db.created_at, // TODO: Phase 2 - Change to createdAt
-    updated_at: db.updated_at, // TODO: Phase 2 - Change to updatedAt
+    // Timestamps - now in camelCase
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
   }
 }
 

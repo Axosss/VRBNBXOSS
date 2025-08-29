@@ -61,7 +61,6 @@ export default function CleanersPage() {
   // Apply filters when they change
   useEffect(() => {
     const filters: CleanerFilters = {
-      ...cleanerFilters,
       search: searchQuery || undefined,
       ...localFilters
     }

@@ -5,37 +5,42 @@ export type CleaningType = 'standard' | 'checkout';
 
 export interface Cleaner {
   id: string;
-  owner_id: string;
+  ownerId: string;
   name: string;
   email?: string | null;
   phone?: string | null;
   rate?: number | null;
+  hourlyRate?: number | null;
+  flatRate?: number | null;
   currency?: string | null;
-  created_at: string;
-  updated_at: string;
+  active?: boolean;
+  services?: string[];
+  rating?: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Cleaning {
   id: string;
-  apartment_id: string;
-  cleaner_id?: string | null;
-  reservation_id?: string | null;
-  owner_id: string;
-  scheduled_start: string;
-  scheduled_end: string;
-  actual_start?: string | null;
-  actual_end?: string | null;
+  apartmentId: string;
+  cleanerId?: string | null;
+  reservationId?: string | null;
+  ownerId: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  actualStart?: string | null;
+  actualEnd?: string | null;
   status: CleaningStatus;
-  cleaning_type: CleaningType;
+  cleaningType: CleaningType;
   instructions?: string | null;
-  supplies?: Record<string, any>;
+  supplies?: Record<string, unknown>;
   photos?: string[];
   cost?: number | null;
   currency: string;
   rating?: number | null;
   notes?: string | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
   
   // Relations (when joined)
   apartment?: {
@@ -46,32 +51,36 @@ export interface Cleaning {
   cleaner?: Cleaner;
   reservation?: {
     id: string;
-    check_in: string;
-    check_out: string;
-    guest_name?: string;
+    checkIn: string;
+    checkOut: string;
+    guestName?: string;
   };
 }
 
 export interface CleaningFilters {
-  apartment_id?: string;
-  cleaner_id?: string;
+  apartmentId?: string;
+  cleanerId?: string;
   status?: CleaningStatus;
-  cleaning_type?: CleaningType;
-  start_date?: string;
-  end_date?: string;
+  cleaningType?: CleaningType;
+  startDate?: string;
+  endDate?: string;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface CleanerFilters {
   active?: boolean;
   search?: string;
-  min_rating?: number;
+  minRating?: number;
   services?: string[];
+  page?: number;
+  limit?: number;
 }
 
 export interface CleaningAvailability {
   date: string;
-  available_slots: TimeSlot[];
+  availableSlots: TimeSlot[];
   cleaners: CleanerAvailability[];
   conflicts: ConflictInfo[];
 }
@@ -84,11 +93,11 @@ export interface TimeSlot {
 }
 
 export interface CleanerAvailability {
-  cleaner_id: string;
-  cleaner_name: string;
+  cleanerId: string;
+  cleanerName: string;
   available: boolean;
-  working_hours?: { start: string; end: string };
-  existing_bookings?: { start: string; end: string }[];
+  workingHours?: { start: string; end: string };
+  existingBookings?: { start: string; end: string }[];
 }
 
 export interface ConflictInfo {
@@ -99,28 +108,28 @@ export interface ConflictInfo {
 }
 
 export interface CreateCleaningData {
-  apartment_id: string;
-  cleaner_id?: string;
-  reservation_id?: string;
-  scheduled_start: string;
-  scheduled_end: string;
-  cleaning_type?: CleaningType;
+  apartmentId: string;
+  cleanerId?: string;
+  reservationId?: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  cleaningType?: CleaningType;
   instructions?: string;
-  supplies?: Record<string, any>;
+  supplies?: Record<string, unknown>;
   cost?: number;
   currency?: string;
 }
 
 export interface UpdateCleaningData {
-  cleaner_id?: string | null;
-  scheduled_start?: string;
-  scheduled_end?: string;
-  actual_start?: string | null;
-  actual_end?: string | null;
+  cleanerId?: string | null;
+  scheduledStart?: string;
+  scheduledEnd?: string;
+  actualStart?: string | null;
+  actualEnd?: string | null;
   status?: CleaningStatus;
-  cleaning_type?: CleaningType;
+  cleaningType?: CleaningType;
   instructions?: string | null;
-  supplies?: Record<string, any>;
+  supplies?: Record<string, unknown>;
   photos?: string[];
   cost?: number | null;
   rating?: number | null;

@@ -4,7 +4,7 @@ import type { ApartmentCreateInput, ApartmentUpdateInput, ApartmentFilterInput, 
 
 export interface Apartment {
   id: string
-  owner_id: string
+  ownerId: string
   name: string
   address: {
     street: string
@@ -17,7 +17,8 @@ export interface Apartment {
   bedrooms?: number
   bathrooms?: number
   amenities: string[]
-  access_codes?: {
+  squareFeet?: number
+  accessCodes?: {
     wifi?: {
       network: string
       password: string
@@ -31,12 +32,12 @@ export interface Apartment {
     url: string
     filename: string
     size: number
-    is_main: boolean
+    isMain: boolean
     order: number
   }>
   status: 'active' | 'maintenance' | 'inactive'
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ApartmentPagination {
@@ -109,11 +110,11 @@ export const useApartmentStore = create<ApartmentState>()(
           const response = await fetch(`/api/apartments?${searchParams.toString()}`)
           const data = await response.json()
           
-          console.log('Apartment store - API response:', {
-            ok: response.ok,
-            status: response.status,
-            data: data
-          })
+          // console.log('Apartment store - API response:', {
+          //   ok: response.ok,
+          //   status: response.status,
+          //   data: data
+          // })
           
           if (!response.ok) {
             throw new Error(data.error || 'Failed to fetch apartments')

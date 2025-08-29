@@ -15,8 +15,8 @@ export function mapGuestFromDB(db: GuestDB): Guest {
   return {
     id: db.id,
     
-    // ID field (keeping snake_case for Phase 1)
-    owner_id: db.owner_id, // TODO: Phase 2 - Change to ownerId
+    // ID field - now in camelCase
+    ownerId: db.owner_id,
     
     // Basic info
     name: db.name,
@@ -26,12 +26,16 @@ export function mapGuestFromDB(db: GuestDB): Guest {
     // Address - already structured in DB
     address: db.address || undefined,
     
-    // ID document (keeping camelCase as it's already that way in frontend)
+    // ID document (already in camelCase)
     idDocument: db.id_document || undefined,
     
-    // Timestamps (keeping snake_case for Phase 1)
-    created_at: db.created_at, // TODO: Phase 2 - Change to createdAt
-    updated_at: db.updated_at, // TODO: Phase 2 - Change to updatedAt
+    // Additional fields
+    notes: db.notes || undefined,
+    blacklisted: db.blacklisted || false,
+    
+    // Timestamps - now in camelCase
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
   }
 }
 

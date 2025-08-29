@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  reactStrictMode: false, // Désactivé pour améliorer les perfs en dev
 };
 
 export default nextConfig;

@@ -22,26 +22,27 @@ export function camelToSnake(str: string): string {
  * Convert all keys in an object from snake_case to camelCase
  * Handles nested objects recursively
  */
-export function convertKeysSnakeToCamel<T = any>(obj: any): T {
+export function convertKeysSnakeToCamel<T = unknown>(obj: unknown): T {
   if (obj === null || obj === undefined) {
     return obj
   }
 
   if (obj instanceof Date) {
-    return obj as any
+    return obj as T
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => convertKeysSnakeToCamel(item)) as any
+    return obj.map(item => convertKeysSnakeToCamel(item)) as T
   }
 
   if (typeof obj === 'object') {
-    const converted: any = {}
+    const converted: Record<string, unknown> = {}
+    const objRecord = obj as Record<string, unknown>
     
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+    for (const key in objRecord) {
+      if (Object.prototype.hasOwnProperty.call(objRecord, key)) {
         const camelKey = snakeToCamel(key)
-        const value = obj[key]
+        const value = objRecord[key]
         
         // Recursively convert nested objects
         if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
@@ -66,7 +67,7 @@ export function convertKeysSnakeToCamel<T = any>(obj: any): T {
  * Convert all keys in an object from camelCase to snake_case
  * Handles nested objects recursively
  */
-export function convertKeysCamelToSnake<T = any>(obj: any): T {
+export function convertKeysCamelToSnake<T = unknown>(obj: unknown): T {
   if (obj === null || obj === undefined) {
     return obj
   }
@@ -76,16 +77,17 @@ export function convertKeysCamelToSnake<T = any>(obj: any): T {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => convertKeysCamelToSnake(item)) as any
+    return obj.map(item => convertKeysCamelToSnake(item)) as T
   }
 
   if (typeof obj === 'object') {
-    const converted: any = {}
+    const converted: Record<string, unknown> = {}
+    const objRecord = obj as Record<string, unknown>
     
-    for (const key in obj) {
-      if (obj.hasOwnProperty(key)) {
+    for (const key in objRecord) {
+      if (Object.prototype.hasOwnProperty.call(objRecord, key)) {
         const snakeKey = camelToSnake(key)
-        const value = obj[key]
+        const value = objRecord[key]
         
         // Recursively convert nested objects
         if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
@@ -112,8 +114,8 @@ export function convertKeysCamelToSnake<T = any>(obj: any): T {
  * Safely convert a value that might be undefined or null
  */
 export function safeConvert<T>(
-  value: any,
-  converter: (val: any) => T
+  value: unknown,
+  converter: (val: unknown) => T
 ): T | null | undefined {
   if (value === null) return null
   if (value === undefined) return undefined
@@ -124,8 +126,8 @@ export function safeConvert<T>(
  * Convert specific fields while preserving others
  * Useful when you only want to convert certain fields
  */
-export function convertSpecificFields<T = any>(
-  obj: any,
+export function convertSpecificFields<T = unknown>(
+  obj: unknown,
   fieldsToConvert: string[],
   converter: (key: string) => string
 ): T {

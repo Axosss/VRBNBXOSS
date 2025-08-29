@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createCleaningSchema, cleaningFiltersSchema } from '@/lib/validations/cleaning';
 import { createErrorResponse, createSuccessResponse, AppError } from '@/lib/utils';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { dbMappers } from '@/lib/mappers';
 import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
@@ -100,9 +101,12 @@ export async function GET(request: NextRequest) {
       throw new AppError(queryError.message, 500);
     }
     
+    // Map cleanings from DB format to frontend format with relations
+    const mappedCleanings = (cleanings || []).map(dbMappers.cleaning.withRelationsFromDB);
+    
     return NextResponse.json(
       createSuccessResponse({
-        cleanings: cleanings || [],
+        cleanings: mappedCleanings,
         pagination: {
           page: filters.page,
           limit: filters.limit,
@@ -141,15 +145,16 @@ export async function POST(request: NextRequest) {
     console.log('POST /api/cleanings - Request body:', JSON.stringify(body, null, 2));
     
     // Transform snake_case to camelCase for validation
+    // Handle both formats (snake_case from the mapper or camelCase if sent directly)
     const transformedBody = {
-      apartmentId: body.apartment_id,
-      cleanerId: body.cleaner_id,
-      reservationId: body.reservation_id,
-      scheduledStart: body.scheduled_start,
-      scheduledEnd: body.scheduled_end,
-      cleaningType: body.cleaning_type || 'standard',
+      apartmentId: body.apartmentId || body.apartment_id,
+      cleanerId: body.cleanerId || body.cleaner_id,
+      reservationId: body.reservationId || body.reservation_id,
+      scheduledStart: body.scheduledStart || body.scheduled_start || body.scheduled_date,
+      scheduledEnd: body.scheduledEnd || body.scheduled_end,
+      cleaningType: body.cleaningType || body.cleaning_type || 'standard',
       instructions: body.instructions,
-      supplies: body.supplies,
+      supplies: body.supplies || {},
       cost: body.cost,
       currency: body.currency || 'EUR'
     };
@@ -194,13 +199,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Check for scheduling conflicts with reservations
-    const cleaningDate = new Date(cleaningData.scheduledStart);
     const { data: conflicts, error: conflictError } = await supabase
       .from('reservations')
       .select('id')
       .eq('apartment_id', cleaningData.apartmentId)
       .neq('status', 'cancelled')
-      .or(`and(check_in.lte.${cleaningDate.toISOString()},check_out.gte.${cleaningDate.toISOString()})`)
+      .lte('check_in', cleaningData.scheduledEnd)
+      .gte('check_out', cleaningData.scheduledStart)
       .limit(1);
     
     if (conflictError) {
@@ -213,26 +218,52 @@ export async function POST(request: NextRequest) {
     }
     
     // Check for conflicts with other cleanings on the same time period
+    console.log('Checking for cleaning conflicts:', {
+      apartmentId: cleaningData.apartmentId,
+      scheduledStart: cleaningData.scheduledStart,
+      scheduledEnd: cleaningData.scheduledEnd
+    });
+    
     const { data: cleaningConflicts, error: cleaningConflictError } = await supabase
       .from('cleanings')
-      .select('id')
+      .select('id, scheduled_start, scheduled_end, status')
       .eq('apartment_id', cleaningData.apartmentId)
       .neq('status', 'cancelled')
-      .or(`and(scheduled_start.lte.${cleaningData.scheduledEnd},scheduled_end.gte.${cleaningData.scheduledStart})`)
-      .limit(1);
+      .lte('scheduled_start', cleaningData.scheduledEnd)
+      .gte('scheduled_end', cleaningData.scheduledStart);
     
     if (cleaningConflictError) {
       console.error('Cleaning conflict check error:', cleaningConflictError);
       throw new AppError('Failed to check cleaning conflicts', 500);
     }
     
+    console.log('Cleaning conflicts query result:', {
+      count: cleaningConflicts?.length || 0,
+      conflicts: cleaningConflicts
+    });
+    
     if (cleaningConflicts && cleaningConflicts.length > 0) {
-      throw new AppError('Cleaning schedule conflicts with another cleaning', 409);
+      const conflict = cleaningConflicts[0];
+      console.log('Cleaning conflict details:', {
+        conflictId: conflict.id,
+        conflictStart: conflict.scheduled_start,
+        conflictEnd: conflict.scheduled_end,
+        conflictStatus: conflict.status,
+        newStart: cleaningData.scheduledStart,
+        newEnd: cleaningData.scheduledEnd
+      });
+      const conflictStart = new Date(conflict.scheduled_start).toLocaleString();
+      const conflictEnd = new Date(conflict.scheduled_end).toLocaleString();
+      throw new AppError(
+        `Another cleaning is already scheduled from ${conflictStart} to ${conflictEnd}`, 
+        409
+      );
     }
     
     // Prepare data for insertion
     const insertData = {
       apartment_id: cleaningData.apartmentId,
+      owner_id: user.id,
       cleaner_id: cleaningData.cleanerId || null,
       reservation_id: cleaningData.reservationId || null,
       scheduled_start: cleaningData.scheduledStart,
@@ -270,8 +301,11 @@ export async function POST(request: NextRequest) {
       throw new AppError(insertError.message, 400);
     }
     
+    // Map cleaning from DB format to frontend format
+    const mappedCleaning = dbMappers.cleaning.fromDB(cleaning);
+    
     return NextResponse.json(
-      createSuccessResponse(cleaning, 'Cleaning scheduled successfully'),
+      createSuccessResponse(mappedCleaning, 'Cleaning scheduled successfully'),
       { status: 201 }
     );
     

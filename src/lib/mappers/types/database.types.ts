@@ -23,7 +23,7 @@ export interface ReservationDB {
   currency: string
   status: 'draft' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'archived'
   notes: string | null
-  contact_info: Record<string, any> | null
+  contact_info: Record<string, unknown> | null
   created_at: string
   updated_at: string
 }
@@ -47,7 +47,7 @@ export interface ApartmentDB {
   bathrooms: number | null
   amenities: string[] // TEXT[] in DB
   photos: string[] // TEXT[] in DB - Note: Frontend expects objects, needs transformation
-  access_codes: Record<string, any> | null // JSONB in DB
+  access_codes: Record<string, unknown> | null // JSONB in DB
   status: 'active' | 'maintenance' | 'inactive'
   created_at: string
   updated_at: string
@@ -65,7 +65,7 @@ export interface CleaningDB {
   duration: string | null // INTERVAL in DB (e.g., "02:00:00")
   status: 'needed' | 'scheduled' | 'in_progress' | 'completed' | 'verified' | 'cancelled'
   instructions: string | null
-  supplies: Record<string, any> | null // JSONB in DB
+  supplies: Record<string, unknown> | null // JSONB in DB
   created_at: string
   updated_at: string
 }
@@ -114,7 +114,7 @@ export interface ProfileDB {
   avatar_url: string | null
   role: 'owner' | 'cleaner' | 'admin'
   timezone: string
-  settings: Record<string, any> // JSONB in DB
+  settings: Record<string, unknown> // JSONB in DB
   created_at: string
   updated_at: string
 }

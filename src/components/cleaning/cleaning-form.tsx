@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { localDateTimeToISO, isoToLocalDateTime } from '@/lib/utils/datetime'
 import { CalendarIcon, DollarSign, MapPin, Sparkles, FileText, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,35 +38,9 @@ interface CleaningFormProps {
   onCancel: () => void
 }
 
-// Transform the schema keys to match our form structure
-const createFormSchema = createCleaningSchema.transform(data => ({
-  apartment_id: data.apartmentId,
-  cleaner_id: data.cleanerId,
-  reservation_id: data.reservationId,
-  scheduled_start: data.scheduledStart,
-  scheduled_end: data.scheduledEnd,
-  cleaning_type: data.cleaningType,
-  instructions: data.instructions,
-  supplies: data.supplies,
-  cost: data.cost,
-  currency: data.currency
-}))
-
-const updateFormSchema = updateCleaningSchema.transform(data => ({
-  cleaner_id: data.cleanerId,
-  scheduled_start: data.scheduledStart,
-  scheduled_end: data.scheduledEnd,
-  actual_start: data.actualStart,
-  actual_end: data.actualEnd,
-  status: data.status,
-  cleaning_type: data.cleaningType,
-  instructions: data.instructions,
-  supplies: data.supplies,
-  photos: data.photos,
-  cost: data.cost,
-  rating: data.rating,
-  notes: data.notes
-}))
+// Use the schemas directly - they're already in camelCase
+const createFormSchema = createCleaningSchema
+const updateFormSchema = updateCleaningSchema
 
 type FormData = z.infer<typeof createCleaningSchema> | z.infer<typeof updateCleaningSchema>
 
@@ -78,11 +53,11 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
     resolver: zodResolver(mode === 'create' ? createCleaningSchema : updateCleaningSchema),
     defaultValues: mode === 'create' 
       ? {
-          apartmentId: initialData?.apartment_id || '',
-          cleanerId: initialData?.cleaner_id || null,
-          reservationId: initialData?.reservation_id || null,
-          scheduledStart: initialData?.scheduled_start || '',
-          scheduledEnd: initialData?.scheduled_end || '',
+          apartmentId: initialData?.apartmentId || '',
+          cleanerId: initialData?.cleanerId || null,
+          reservationId: initialData?.reservationId || null,
+          scheduledStart: initialData?.scheduledStart ? isoToLocalDateTime(initialData.scheduledStart) : '',
+          scheduledEnd: initialData?.scheduledEnd ? isoToLocalDateTime(initialData.scheduledEnd) : '',
           cleaningType: 'standard',
           instructions: initialData?.instructions || '',
           supplies: initialData?.supplies || {},
@@ -90,11 +65,11 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
           currency: initialData?.currency || 'EUR',
         }
       : {
-          cleanerId: initialData?.cleaner_id || null,
-          scheduledStart: initialData?.scheduled_start || '',
-          scheduledEnd: initialData?.scheduled_end || '',
-          actualStart: initialData?.actual_start || null,
-          actualEnd: initialData?.actual_end || null,
+          cleanerId: initialData?.cleanerId || null,
+          scheduledStart: initialData?.scheduledStart ? isoToLocalDateTime(initialData.scheduledStart) : '',
+          scheduledEnd: initialData?.scheduledEnd ? isoToLocalDateTime(initialData.scheduledEnd) : '',
+          actualStart: initialData?.actualStart ? isoToLocalDateTime(initialData.actualStart) : null,
+          actualEnd: initialData?.actualEnd ? isoToLocalDateTime(initialData.actualEnd) : null,
           status: initialData?.status || 'needed',
           cleaningType: 'standard',
           instructions: initialData?.instructions || '',
@@ -107,12 +82,15 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
   })
 
   const watchedValues = form.watch()
-  const selectedApartmentId = 'apartmentId' in watchedValues ? watchedValues.apartmentId : initialData?.apartment_id
-  const scheduledStart = watchedValues.scheduledStart || initialData?.scheduled_start
+  const selectedApartmentId = 'apartmentId' in watchedValues ? watchedValues.apartmentId : initialData?.apartmentId
+  const scheduledStart = watchedValues.scheduledStart || initialData?.scheduledStart
 
   useEffect(() => {
-    fetchApartments({ limit: 100 })
-  }, [fetchApartments])
+    // Only fetch if apartments are not already loaded
+    if (apartments.length === 0 && !isLoadingApartments) {
+      fetchApartments({ limit: 100 })
+    }
+  }, []) // Empty dependency array - only run once on mount
 
   const selectedApartment = apartments.find(apt => apt.id === selectedApartmentId)
 
@@ -126,18 +104,24 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
   }, [scheduledStart]) // Remove watchedValues.scheduledEnd from dependencies to prevent overriding
 
   const handleSubmit = async (data: FormData) => {
+    // Prevent double submission
+    if (isSubmitting) {
+      return
+    }
+    
     try {
       setIsSubmitting(true)
       
       if (mode === 'create') {
         const createData = data as z.infer<typeof createCleaningSchema>
+        
         const transformedData = {
-          apartment_id: createData.apartmentId,
-          cleaner_id: createData.cleanerId,
-          reservation_id: createData.reservationId,
-          scheduled_start: createData.scheduledStart,
-          scheduled_end: createData.scheduledEnd,
-          cleaning_type: createData.cleaningType,
+          apartmentId: createData.apartmentId,
+          cleanerId: createData.cleanerId,
+          reservationId: createData.reservationId,
+          scheduledStart: localDateTimeToISO(createData.scheduledStart),
+          scheduledEnd: localDateTimeToISO(createData.scheduledEnd),
+          cleaningType: createData.cleaningType,
           instructions: createData.instructions,
           supplies: createData.supplies,
           cost: createData.cost,
@@ -147,13 +131,13 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
       } else {
         const updateData = data as z.infer<typeof updateCleaningSchema>
         const transformedData = {
-          cleaner_id: updateData.cleanerId,
-          scheduled_start: updateData.scheduledStart,
-          scheduled_end: updateData.scheduledEnd,
-          actual_start: updateData.actualStart,
-          actual_end: updateData.actualEnd,
+          cleanerId: updateData.cleanerId,
+          scheduledStart: updateData.scheduledStart ? localDateTimeToISO(updateData.scheduledStart) : undefined,
+          scheduledEnd: updateData.scheduledEnd ? localDateTimeToISO(updateData.scheduledEnd) : undefined,
+          actualStart: updateData.actualStart ? localDateTimeToISO(updateData.actualStart) : null,
+          actualEnd: updateData.actualEnd ? localDateTimeToISO(updateData.actualEnd) : null,
           status: updateData.status,
-          cleaning_type: updateData.cleaningType,
+          cleaningType: updateData.cleaningType,
           instructions: updateData.instructions,
           supplies: updateData.supplies,
           photos: updateData.photos,
@@ -191,7 +175,7 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
                     <FormItem>
                       <FormLabel>Property *</FormLabel>
                       <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a property" />
                           </SelectTrigger>
@@ -326,7 +310,7 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
                       <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>

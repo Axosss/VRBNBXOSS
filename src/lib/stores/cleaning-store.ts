@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { dbMappers } from '@/lib/mappers';
 import type { 
   Cleaning, 
   Cleaner, 
@@ -102,6 +103,8 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to fetch cleanings');
           }
           
+          // Cleanings are already mapped in the API, no need to map again
+          
           set({
             cleanings: data.data.cleanings,
             cleaningPagination: data.data.pagination,
@@ -132,6 +135,8 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to fetch cleaning');
           }
           
+          // Cleaning is already mapped in the API, no need to map again
+          
           set({
             selectedCleaning: data.data,
             isLoading: false,
@@ -148,10 +153,13 @@ export const useCleaningStore = create<CleaningState>()(
         set({ isLoading: true, error: null });
         
         try {
+          // Convert camelCase to snake_case for the API
+          const dbData = dbMappers.cleaning.toDB(cleaningData);
+          
           const response = await fetch('/api/cleanings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cleaningData),
+            body: JSON.stringify(dbData),
           });
           
           if (!response.ok) {
@@ -165,6 +173,7 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to create cleaning');
           }
           
+          // Cleaning is already mapped in the API, no need to map again
           const newCleaning = data.data;
           set((state) => ({
             cleanings: [newCleaning, ...state.cleanings],
@@ -202,6 +211,7 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to update cleaning');
           }
           
+          // Cleaning is already mapped in the API, no need to map again
           const updatedCleaning = data.data;
           set((state) => ({
             cleanings: state.cleanings.map(c => 
@@ -282,8 +292,11 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to fetch cleaners');
           }
           
+          // Map cleaners from DB format to frontend format
+          const mappedCleaners = data.data.cleaners.map(dbMappers.cleaner.fromDB);
+          
           set({
-            cleaners: data.data.cleaners,
+            cleaners: mappedCleaners,
             cleanerPagination: data.data.pagination,
             isLoading: false,
           });
@@ -312,8 +325,11 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to fetch cleaner');
           }
           
+          // Map cleaner from DB format to frontend format
+          const mappedCleaner = dbMappers.cleaner.fromDB(data.data);
+          
           set({
-            selectedCleaner: data.data,
+            selectedCleaner: mappedCleaner,
             isLoading: false,
           });
         } catch (error) {
@@ -345,7 +361,8 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to create cleaner');
           }
           
-          const newCleaner = data.data;
+          // Map cleaner from DB format to frontend format
+          const newCleaner = dbMappers.cleaner.fromDB(data.data);
           set((state) => ({
             cleaners: [newCleaner, ...state.cleaners],
             isLoading: false,
@@ -382,7 +399,8 @@ export const useCleaningStore = create<CleaningState>()(
             throw new Error(data.error || 'Failed to update cleaner');
           }
           
-          const updatedCleaner = data.data;
+          // Map cleaner from DB format to frontend format
+          const updatedCleaner = dbMappers.cleaner.fromDB(data.data);
           set((state) => ({
             cleaners: state.cleaners.map(c => 
               c.id === id ? updatedCleaner : c

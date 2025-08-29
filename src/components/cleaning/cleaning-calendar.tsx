@@ -59,14 +59,24 @@ export function CleaningCalendar({
   const [viewMode, setViewMode] = useState<ViewMode>('week')
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const date = new Date(dateString)
+    if (!date || isNaN(date.getTime())) {
+      return ''
+    }
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   }
 
   const formatDate = (date: Date) => {
+    if (!date || isNaN(date.getTime())) {
+      return ''
+    }
     return date.toISOString().split('T')[0]
   }
 
   const isSameDay = (date1: Date, date2: Date) => {
+    if (!date1 || !date2 || isNaN(date1.getTime()) || isNaN(date2.getTime())) {
+      return false
+    }
     return formatDate(date1) === formatDate(date2)
   }
 
@@ -116,23 +126,30 @@ export function CleaningCalendar({
 
   const filteredCleanings = useMemo(() => {
     return cleanings.filter(cleaning => {
-      if (selectedApartmentId && cleaning.apartment_id !== selectedApartmentId) return false
-      if (selectedCleanerId && cleaning.cleaner_id !== selectedCleanerId) return false
+      if (selectedApartmentId && cleaning.apartmentId !== selectedApartmentId) return false
+      if (selectedCleanerId && cleaning.cleanerId !== selectedCleanerId) return false
       if (selectedStatus && cleaning.status !== selectedStatus) return false
       return true
     })
   }, [cleanings, selectedApartmentId, selectedCleanerId, selectedStatus])
 
   const getCleaningsForDate = (date: Date) => {
-    return filteredCleanings.filter(cleaning => 
-      isSameDay(new Date(cleaning.scheduled_start), date)
-    )
+    if (!date || isNaN(date.getTime())) {
+      return []
+    }
+    return filteredCleanings.filter(cleaning => {
+      const cleaningDate = new Date(cleaning.scheduledStart)
+      return !isNaN(cleaningDate.getTime()) && isSameDay(cleaningDate, date)
+    })
   }
 
   const getCleaningsForHour = (date: Date, hour: number) => {
+    if (!date || isNaN(date.getTime())) {
+      return []
+    }
     return filteredCleanings.filter(cleaning => {
-      const cleaningDate = new Date(cleaning.scheduled_start)
-      return isSameDay(cleaningDate, date) && cleaningDate.getHours() === hour
+      const cleaningDate = new Date(cleaning.scheduledStart)
+      return !isNaN(cleaningDate.getTime()) && isSameDay(cleaningDate, date) && cleaningDate.getHours() === hour
     })
   }
 
@@ -188,7 +205,7 @@ export function CleaningCalendar({
     >
       <div className="flex items-center justify-between mb-1">
         <span className="font-medium truncate">
-          {cleaning.cleaning_type.charAt(0).toUpperCase() + cleaning.cleaning_type.slice(1)}
+          {cleaning.cleaningType.charAt(0).toUpperCase() + cleaning.cleaningType.slice(1)}
         </span>
         <CleaningStatusBadge status={cleaning.status} className="text-xs py-0 px-1" />
       </div>
@@ -198,7 +215,7 @@ export function CleaningCalendar({
           <div className="flex items-center gap-1 text-muted-foreground mb-1">
             <Clock className="h-3 w-3" />
             <span>
-              {formatTime(cleaning.scheduled_start)} - {formatTime(cleaning.scheduled_end)}
+              {formatTime(cleaning.scheduledStart)} - {formatTime(cleaning.scheduledEnd)}
             </span>
           </div>
           

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createCleanerSchema, cleanerFiltersSchema } from '@/lib/validations/cleaning';
 import { createErrorResponse, createSuccessResponse, AppError } from '@/lib/utils';
 import { sanitizeText, sanitizeContactInfo } from '@/lib/utils/sanitize';
+import { dbMappers } from '@/lib/mappers';
 import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
@@ -56,9 +57,12 @@ export async function GET(request: NextRequest) {
       throw new AppError(queryError.message, 500);
     }
     
+    // Map cleaners from DB format to frontend format
+    const mappedCleaners = (cleaners || []).map(dbMappers.cleaner.fromDB);
+    
     return NextResponse.json(
       createSuccessResponse({
-        cleaners: cleaners || [],
+        cleaners: mappedCleaners,
         pagination: {
           page: filters.page,
           limit: filters.limit,
@@ -132,8 +136,11 @@ export async function POST(request: NextRequest) {
       throw new AppError(insertError.message, 400);
     }
     
+    // Map cleaner from DB format to frontend format
+    const mappedCleaner = dbMappers.cleaner.fromDB(cleaner);
+    
     return NextResponse.json(
-      createSuccessResponse(cleaner, 'Cleaner created successfully'),
+      createSuccessResponse(mappedCleaner, 'Cleaner created successfully'),
       { status: 201 }
     );
     

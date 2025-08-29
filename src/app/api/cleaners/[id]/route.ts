@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { updateCleanerSchema } from '@/lib/validations/cleaning';
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID } from '@/lib/utils';
 import { sanitizeText, sanitizeContactInfo } from '@/lib/utils/sanitize';
+import { dbMappers } from '@/lib/mappers';
 import { z } from 'zod';
 
 export async function GET(
@@ -40,8 +41,11 @@ export async function GET(
       throw new AppError(queryError.message, 500);
     }
     
+    // Map cleaner from DB format to frontend format
+    const mappedCleaner = dbMappers.cleaner.fromDB(cleaner);
+    
     return NextResponse.json(
-      createSuccessResponse(cleaner, 'Cleaner fetched successfully')
+      createSuccessResponse(mappedCleaner, 'Cleaner fetched successfully')
     );
     
   } catch (error) {
@@ -97,7 +101,7 @@ export async function PUT(
     }
     
     // Prepare update data - match actual schema
-    const cleanedData: any = {};
+    const cleanedData: Record<string, unknown> = {};
     
     if (updateData.name !== undefined) cleanedData.name = sanitizeText(updateData.name);
     if (updateData.email !== undefined) cleanedData.email = updateData.email ? sanitizeText(updateData.email) : null;
@@ -124,8 +128,11 @@ export async function PUT(
       throw new AppError(updateError.message, 400);
     }
     
+    // Map cleaner from DB format to frontend format
+    const mappedCleaner = dbMappers.cleaner.fromDB(updatedCleaner);
+    
     return NextResponse.json(
-      createSuccessResponse(updatedCleaner, 'Cleaner updated successfully')
+      createSuccessResponse(mappedCleaner, 'Cleaner updated successfully')
     );
     
   } catch (error) {

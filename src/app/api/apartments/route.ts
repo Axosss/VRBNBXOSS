@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { apartmentCreateSchema, paginationSchema, apartmentFilterSchema } from '@/lib/validations'
 import { createErrorResponse, createSuccessResponse, AppError } from '@/lib/utils'
 import { sanitizeSearchQuery, sanitizeText } from '@/lib/utils/sanitize'
+import { dbMappers } from '@/lib/mappers'
 import { z } from 'zod'
 
 export async function GET(request: NextRequest) {
@@ -52,9 +53,12 @@ export async function GET(request: NextRequest) {
       throw new AppError(queryError.message, 500)
     }
     
+    // Map apartments from DB format to frontend format
+    const mappedApartments = (apartments || []).map(dbMappers.apartment.fromDB)
+    
     return NextResponse.json(
       createSuccessResponse({
-        apartments: apartments || [],
+        apartments: mappedApartments,
         pagination: {
           page: pagination.page,
           limit: pagination.limit,
@@ -96,20 +100,18 @@ export async function POST(request: NextRequest) {
       throw new AppError('Unauthorized', 401)
     }
     
-    // Prepare data for insertion
-    const insertData = {
-      owner_id: user.id,
-      name: sanitizeText(apartmentData.name),
-      address: apartmentData.address,
-      capacity: apartmentData.capacity,
-      bedrooms: apartmentData.bedrooms,
-      bathrooms: apartmentData.bathrooms,
-      square_feet: apartmentData.squareFeet,
-      amenities: apartmentData.amenities || [],
+    // Map data to DB format and prepare for insertion
+    const dataToInsert = {
+      ...apartmentData,
+      ownerId: user.id,
       photos: [],
-      access_codes: apartmentData.accessCodes,
-      status: apartmentData.status || 'active',
-      notes: apartmentData.notes ? sanitizeText(apartmentData.notes) : null
+    }
+    const insertData = dbMappers.apartment.toDB(dataToInsert)
+    
+    // Apply sanitization after mapping
+    insertData.name = sanitizeText(insertData.name)
+    if (insertData.notes) {
+      insertData.notes = sanitizeText(insertData.notes)
     }
     
     // Insert apartment
@@ -123,8 +125,11 @@ export async function POST(request: NextRequest) {
       throw new AppError(insertError.message, 400)
     }
     
+    // Map apartment from DB format to frontend format
+    const mappedApartment = dbMappers.apartment.fromDB(apartment)
+    
     return NextResponse.json(
-      createSuccessResponse(apartment, 'Apartment created successfully'),
+      createSuccessResponse(mappedApartment, 'Apartment created successfully'),
       { status: 201 }
     )
     

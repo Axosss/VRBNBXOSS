@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Please use Conventional Commits formatting for git commits.
 - Please use Conventional Branch naming (prefix-based branch naming convention)
 - Please do not mention yourself (Claude) as a co-author when committing, or include any links to Claude Code
+
 ## Visual Development Memories
 - Please use the playwright MCP server when making visual changes to the front-end to check your work
 ## Guidance Memories
@@ -120,6 +121,23 @@ All tables implement RLS policies ensuring users only access their own data. Key
 - Real-time subscriptions limited to prevent memory leaks
 - Image optimization via Supabase Edge Functions
 - Efficient pagination for large datasets
+
+### Data Mapping Architecture
+**Current Implementation (as of Aug 2025):**
+- Database uses snake_case naming convention (PostgreSQL standard)
+- Frontend uses camelCase naming convention (TypeScript/JavaScript standard)
+- Data mappers in `/src/lib/mappers/` handle conversions
+
+**API Design Pattern:**
+- **CREATE operations**: Frontend uses mapper to convert camelCase to snake_case before sending to API
+- **UPDATE operations**: Frontend sends camelCase directly; API handles conversion internally
+  - Validation schemas expect camelCase input
+  - API routes manually convert to snake_case for database operations
+  - This inconsistency is intentional for now - working but could be unified in future
+- **READ operations**: API uses mappers to convert snake_case responses to camelCase
+- **DELETE operations**: Simple ID-based operations, no mapping needed
+
+**Rationale**: This mixed approach allows the API to accept frontend-friendly camelCase while maintaining database conventions. The inconsistency between CREATE (uses mapper) and UPDATE (doesn't use mapper) is a known technical debt that can be addressed when refactoring the API layer.
 
 ## Development Workflow
 

@@ -15,34 +15,34 @@ export function mapReservationFromDB(db: ReservationDB): Reservation {
   return {
     id: db.id,
     
-    // Convert snake_case to camelCase for ID fields
-    apartment_id: db.apartment_id, // TODO: Phase 2 - Change to apartmentId
-    owner_id: db.owner_id,         // TODO: Phase 2 - Change to ownerId
-    guest_id: db.guest_id || '',   // TODO: Phase 2 - Change to guestId (empty string for null)
+    // ID fields - now in camelCase
+    apartmentId: db.apartment_id,
+    ownerId: db.owner_id,
+    guestId: db.guest_id || '',
     
     // Platform information
     platform: db.platform,
-    platform_reservation_id: db.platform_reservation_id, // TODO: Phase 2 - Change to platformReservationId
+    platformReservationId: db.platform_reservation_id,
     
-    // Dates - keeping as strings for now
-    check_in: db.check_in,   // TODO: Phase 2 - Change to checkIn
-    check_out: db.check_out, // TODO: Phase 2 - Change to checkOut
+    // Dates - now in camelCase
+    checkIn: db.check_in,
+    checkOut: db.check_out,
     
-    // Guest and pricing information
-    guest_count: db.guest_count,     // TODO: Phase 2 - Change to guestCount
-    total_price: db.total_price,     // TODO: Phase 2 - Change to totalPrice
-    cleaning_fee: db.cleaning_fee,   // TODO: Phase 2 - Change to cleaningFee
-    platform_fee: db.platform_fee,   // TODO: Phase 2 - Change to platformFee
+    // Guest and pricing information - now in camelCase
+    guestCount: db.guest_count,
+    totalPrice: db.total_price,
+    cleaningFee: db.cleaning_fee,
+    platformFee: db.platform_fee,
     currency: db.currency,
     
     // Status and metadata
     status: db.status,
     notes: db.notes,
-    contact_info: db.contact_info, // TODO: Phase 2 - Change to contactInfo
+    contactInfo: db.contact_info,
     
-    // Timestamps
-    created_at: db.created_at, // TODO: Phase 2 - Change to createdAt
-    updated_at: db.updated_at, // TODO: Phase 2 - Change to updatedAt
+    // Timestamps - now in camelCase
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
   }
 }
 
@@ -116,11 +116,11 @@ export function mapReservationToDB(app: Partial<Reservation>): Partial<Reservati
 export function mapReservationWithRelationsFromDB(db: ReservationWithRelationsDB): Reservation {
   const reservation = mapReservationFromDB(db)
   
-  // Add related data if present
+  // Add related data if present - now in camelCase
   if (db.apartment) {
     (reservation as any).apartment = {
       id: db.apartment.id,
-      owner_id: db.apartment.owner_id, // TODO: Phase 2 - Change to ownerId
+      ownerId: db.apartment.owner_id,
       name: db.apartment.name,
       address: db.apartment.address,
       capacity: db.apartment.capacity,
@@ -131,7 +131,7 @@ export function mapReservationWithRelationsFromDB(db: ReservationWithRelationsDB
   if (db.guest) {
     (reservation as any).guest = {
       id: db.guest.id,
-      owner_id: db.guest.owner_id, // TODO: Phase 2 - Change to ownerId
+      ownerId: db.guest.owner_id,
       name: db.guest.name,
       email: db.guest.email,
       phone: db.guest.phone,

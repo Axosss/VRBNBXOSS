@@ -57,20 +57,20 @@ export async function GET(request: NextRequest) {
       throw new AppError('Failed to fetch apartments', 500)
     }
     
-    // Transform reservations
+    // Transform reservations (convert to camelCase for frontend)
     const transformedReservations: CalendarReservation[] = (reservations || []).map((res: any) => ({
       id: res.id,
-      apartment_id: res.apartment_id,
-      apartment_name: res.apartments?.name || 'Unknown',
-      guest_name: res.guests?.name || res.contact_info?.name || 'Guest',
+      apartmentId: res.apartment_id,  // camelCase
+      apartmentName: res.apartments?.name || 'Unknown',  // camelCase
+      guestName: res.guests?.name || res.contact_info?.name || 'Guest',  // camelCase
       platform: res.platform,
-      check_in: res.check_in,
-      check_out: res.check_out,
-      guest_count: res.guest_count,
-      total_price: parseFloat(res.total_price || 0),
+      checkIn: res.check_in,  // camelCase
+      checkOut: res.check_out,  // camelCase
+      guestCount: res.guest_count,  // camelCase
+      totalPrice: parseFloat(res.total_price || 0),  // camelCase
       status: res.status,
       notes: res.notes,
-      contact_info: res.contact_info,
+      contactInfo: res.contact_info,  // camelCase
       nights: Math.ceil((new Date(res.check_out).getTime() - new Date(res.check_in).getTime()) / (1000 * 60 * 60 * 24))
     }))
     

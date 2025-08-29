@@ -47,18 +47,20 @@ export function reservationsToEvents(
   reservations: CalendarReservation[],
   apartments: Array<{ id: string; name: string }>
 ): CalendarEvent[] {
-  return reservations.map(reservation => ({
-    id: reservation.id,
-    type: 'reservation' as const,
-    title: reservation.guest_name,
-    start: parseISO(reservation.check_in),
-    end: parseISO(reservation.check_out),
-    apartmentId: reservation.apartment_id,
-    apartmentName: reservation.apartment_name,
-    data: reservation,
-    color: getApartmentColor(reservation.apartment_id, apartments).bg,
-    textColor: getApartmentColor(reservation.apartment_id, apartments).text
-  }))
+  return reservations
+    .filter(reservation => reservation.checkIn && reservation.checkOut) // Filter out invalid reservations
+    .map(reservation => ({
+      id: reservation.id,
+      type: 'reservation' as const,
+      title: reservation.guestName || 'Unknown Guest',
+      start: parseISO(reservation.checkIn),
+      end: parseISO(reservation.checkOut),
+      apartmentId: reservation.apartmentId,
+      apartmentName: reservation.apartmentName || 'Unknown Apartment',
+      data: reservation,
+      color: getApartmentColor(reservation.apartmentId, apartments).bg,
+      textColor: getApartmentColor(reservation.apartmentId, apartments).text
+    }))
 }
 
 // Generate calendar days for month view

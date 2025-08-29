@@ -4,7 +4,7 @@ import type { ReservationCreateInput, ReservationUpdateInput, ReservationFilterI
 
 export interface Guest {
   id: string
-  owner_id: string
+  ownerId: string
   name: string
   email?: string
   phone?: string
@@ -16,13 +16,15 @@ export interface Guest {
     country?: string
   }
   idDocument?: string
-  created_at: string
-  updated_at: string
+  notes?: string
+  blacklisted?: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Apartment {
   id: string
-  owner_id: string
+  ownerId: string
   name: string
   address: {
     street: string
@@ -37,23 +39,23 @@ export interface Apartment {
 
 export interface Reservation {
   id: string
-  apartment_id: string
-  owner_id: string
-  guest_id: string
+  apartmentId: string
+  ownerId: string
+  guestId: string
   platform: 'airbnb' | 'vrbo' | 'direct' | 'booking_com'
-  platform_reservation_id?: string
-  check_in: string
-  check_out: string
-  guest_count: number
-  total_price: number
-  cleaning_fee?: number
-  platform_fee?: number
+  platformReservationId?: string
+  checkIn: string
+  checkOut: string
+  guestCount: number
+  totalPrice: number
+  cleaningFee?: number
+  platformFee?: number
   currency: string
   status: 'draft' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'archived'
   notes?: string
-  contact_info?: object
-  created_at: string
-  updated_at: string
+  contactInfo?: object
+  createdAt: string
+  updatedAt: string
   
   // Relations (from API joins)
   apartment?: Apartment

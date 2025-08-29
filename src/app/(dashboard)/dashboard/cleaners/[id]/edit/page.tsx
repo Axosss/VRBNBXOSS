@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { notFound } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -159,7 +159,7 @@ export default function EditCleanerPage({ params }: CleanerEditPageProps) {
         <div>
           <h1 className="text-2xl font-bold">Edit Cleaner</h1>
           <p className="text-muted-foreground">
-            Update {selectedCleaner.name}'s information
+            Update {selectedCleaner.name}&apos;s information
           </p>
         </div>
       </div>

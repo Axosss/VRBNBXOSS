@@ -15,8 +15,8 @@ export function mapApartmentFromDB(db: ApartmentDB): Apartment {
   return {
     id: db.id,
     
-    // ID fields (keeping snake_case for Phase 1)
-    owner_id: db.owner_id, // TODO: Phase 2 - Change to ownerId
+    // ID fields - now in camelCase
+    ownerId: db.owner_id,
     
     // Basic info
     name: db.name,
@@ -24,21 +24,21 @@ export function mapApartmentFromDB(db: ApartmentDB): Apartment {
     capacity: db.capacity,
     bedrooms: db.bedrooms || undefined,
     bathrooms: db.bathrooms || undefined,
+    squareFeet: db.square_feet || undefined,
     amenities: db.amenities || [],
     
     // Photos - IMPORTANT: DB stores strings, frontend expects objects
-    // For Phase 1, we'll convert simple strings to objects
     photos: (db.photos || []).map((url, index) => ({
       id: `photo-${index}`,
       url: url,
       filename: url.split('/').pop() || 'photo.jpg',
       size: 0, // Unknown from DB
-      is_main: index === 0,
+      isMain: index === 0,
       order: index
     })),
     
-    // Access codes (keeping snake_case for Phase 1)
-    access_codes: db.access_codes ? {
+    // Access codes - now in camelCase structure
+    accessCodes: db.access_codes ? {
       wifi: db.access_codes.wifi,
       door: db.access_codes.door,
       mailbox: db.access_codes.mailbox,
@@ -46,10 +46,11 @@ export function mapApartmentFromDB(db: ApartmentDB): Apartment {
     } : undefined,
     
     status: db.status,
+    notes: db.notes || undefined,
     
-    // Timestamps (keeping snake_case for Phase 1)
-    created_at: db.created_at, // TODO: Phase 2 - Change to createdAt
-    updated_at: db.updated_at, // TODO: Phase 2 - Change to updatedAt
+    // Timestamps - now in camelCase
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
   }
 }
 

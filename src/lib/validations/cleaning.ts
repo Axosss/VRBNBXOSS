@@ -2,17 +2,16 @@ import { z } from 'zod';
 
 // Enums
 export const cleaningStatusEnum = z.enum([
-  'needed',
   'scheduled',
-  'in_progress',
-  'completed',
-  'cancelled',
-  'verified'
+  'completed'
 ]);
 
 export const cleaningTypeEnum = z.enum([
   'standard',
-  'checkout'
+  'deep',
+  'maintenance',
+  'checkout',
+  'checkin'
 ]);
 
 // Cleaner schemas

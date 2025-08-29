@@ -36,8 +36,8 @@ export function ReservationCard({
   }
 
   const getDuration = () => {
-    const checkIn = new Date(reservation.check_in)
-    const checkOut = new Date(reservation.check_out)
+    const checkIn = new Date(reservation.checkIn)
+    const checkOut = new Date(reservation.checkOut)
     const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
@@ -76,19 +76,19 @@ export function ReservationCard({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" />
-                  <span>{formatDate(reservation.check_in)}</span>
+                  <span>{formatDate(reservation.checkIn)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" />
-                  <span>{formatDate(reservation.check_out)}</span>
+                  <span>{formatDate(reservation.checkOut)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  <span>{reservation.guest_count} guests</span>
+                  <span>{reservation.guestCount} guests</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <DollarSign className="h-3 w-3" />
-                  <span>{formatCurrency(reservation.total_price, reservation.currency)}</span>
+                  <span>{formatCurrency(reservation.totalPrice, reservation.currency)}</span>
                 </div>
               </div>
 
@@ -170,11 +170,11 @@ export function ReservationCard({
           {/* Dates */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Check-in</span>
-            <span className="font-medium">{formatDate(reservation.check_in)}</span>
+            <span className="font-medium">{formatDate(reservation.checkIn)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Check-out</span>
-            <span className="font-medium">{formatDate(reservation.check_out)}</span>
+            <span className="font-medium">{formatDate(reservation.checkOut)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Duration</span>
@@ -184,12 +184,12 @@ export function ReservationCard({
           {/* Details */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Guests</span>
-            <span className="font-medium">{reservation.guest_count}</span>
+            <span className="font-medium">{reservation.guestCount}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Total</span>
             <span className="font-semibold text-foreground">
-              {formatCurrency(reservation.total_price, reservation.currency)}
+              {formatCurrency(reservation.totalPrice, reservation.currency)}
             </span>
           </div>
 

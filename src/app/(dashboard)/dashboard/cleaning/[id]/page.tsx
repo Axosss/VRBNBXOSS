@@ -14,7 +14,6 @@ import {
   Star,
   CheckCircle2,
   PlayCircle,
-  XCircle,
   AlertCircle,
   Trash2,
   UserPlus,
@@ -23,7 +22,6 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   Dialog,
@@ -32,17 +30,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { CleaningStatusBadge } from '@/components/cleaning/cleaning-status-badge'
 import { CleaningForm } from '@/components/cleaning/cleaning-form'
@@ -53,11 +40,6 @@ import type { CleaningStatus, UpdateCleaningData } from '@/types/cleaning'
 
 interface CleaningDetailsPageProps {
   params: Promise<{ id: string }>
-}
-
-// Missing AlertDialog component - let me create a simple version
-function AlertDialogTemp({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
 }
 
 export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps) {
@@ -77,11 +59,28 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
   const [selectedCleanerId, setSelectedCleanerId] = useState<string | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
 
+  const [hasFetched, setHasFetched] = useState(false)
+  
   useEffect(() => {
-    if (cleaningId) {
-      fetchCleaning(cleaningId)
+    if (cleaningId && !hasFetched) {
+      console.log('Fetching cleaning with ID:', cleaningId)
+      setHasFetched(true)
+      fetchCleaning(cleaningId).then(() => {
+        console.log('Cleaning fetched successfully')
+      }).catch(err => {
+        console.error('Error fetching cleaning:', err)
+      })
     }
-  }, [cleaningId, fetchCleaning])
+  }, [cleaningId, fetchCleaning, hasFetched])
+
+  // Debug logging
+  console.log('Component state:', { 
+    cleaningId, 
+    isLoading, 
+    error, 
+    selectedCleaning,
+    hasSelectedCleaning: !!selectedCleaning 
+  })
 
   if (isLoading) {
     return (
@@ -91,14 +90,52 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
     )
   }
 
-  if (error || !selectedCleaning) {
+  if (error) {
+    console.error('Cleaning details error:', error)
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <AlertCircle className="h-12 w-12 text-destructive" />
+        <h2 className="text-xl font-semibold">Error Loading Cleaning</h2>
+        <p className="text-muted-foreground">{error}</p>
+        <Button onClick={() => router.push('/dashboard/cleaning')}>
+          Back to Cleanings
+        </Button>
+      </div>
+    )
+  }
+
+  // Only show 404 if we've tried to fetch and still no data
+  if (!selectedCleaning && hasFetched && !isLoading && !error) {
     notFound()
+  }
+  
+  // If we're still waiting for data, show loading
+  if (!selectedCleaning) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner className="h-8 w-8" />
+      </div>
+    )
   }
 
   const cleaning = selectedCleaning
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      return {
+        date: 'Date not set',
+        time: 'Time not set'
+      }
+    }
+    
     const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return {
+        date: 'Invalid date',
+        time: 'Invalid time'
+      }
+    }
+    
     return {
       date: date.toLocaleDateString([], { 
         weekday: 'long', 
@@ -227,13 +264,13 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
   }
 
   const statusActions = getStatusActions(cleaning.status)
-  const scheduledStart = formatDateTime(cleaning.scheduled_start)
-  const scheduledEnd = formatDateTime(cleaning.scheduled_end)
-  const actualStart = cleaning.actual_start ? formatDateTime(cleaning.actual_start) : null
-  const actualEnd = cleaning.actual_end ? formatDateTime(cleaning.actual_end) : null
+  const scheduledStart = formatDateTime(cleaning.scheduledStart)
+  const scheduledEnd = formatDateTime(cleaning.scheduledEnd)
+  const actualStart = cleaning.actualStart ? formatDateTime(cleaning.actualStart) : null
+  const actualEnd = cleaning.actualEnd ? formatDateTime(cleaning.actualEnd) : null
 
   const isOverdue = (cleaning.status === 'needed' || cleaning.status === 'scheduled') && 
-    new Date(cleaning.scheduled_start) < new Date()
+    new Date(cleaning.scheduledStart) < new Date()
 
   return (
     <div className="space-y-6">
@@ -249,32 +286,25 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">
-            {cleaning.cleaning_type.charAt(0).toUpperCase() + cleaning.cleaning_type.slice(1)} Cleaning
+            {cleaning.cleaningType.charAt(0).toUpperCase() + cleaning.cleaningType.slice(1)} Cleaning
           </h1>
           <p className="text-muted-foreground">
             {cleaning.apartment?.name} • {scheduledStart.date}
           </p>
         </div>
         <div className="flex gap-2">
-          <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Cleaning</DialogTitle>
-              </DialogHeader>
-              <CleaningForm
-                mode="edit"
-                initialData={cleaning}
-                onSubmit={handleEditCleaning}
-                onCancel={() => setShowEditDialog(false)}
-              />
-            </DialogContent>
-          </Dialog>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // For now, navigate to an edit page
+              // In a full implementation, this would open a dialog
+              router.push(`/dashboard/cleaning/${cleaningId}/edit`)
+            }}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
 
           {cleaning.status !== 'cancelled' && cleaning.status !== 'verified' && (
             <div className="flex gap-2">

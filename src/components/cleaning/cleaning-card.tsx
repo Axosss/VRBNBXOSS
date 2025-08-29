@@ -66,16 +66,40 @@ export function CleaningCard({
     }
   }
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      return {
+        date: 'Invalid Date',
+        time: 'Invalid Date'
+      }
+    }
+    
     const date = new Date(dateString)
+    if (isNaN(date.getTime())) {
+      return {
+        date: 'Invalid Date',
+        time: 'Invalid Date'
+      }
+    }
+    
     return {
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   }
 
-  const scheduledStart = formatDateTime(cleaning.scheduled_start)
-  const scheduledEnd = formatDateTime(cleaning.scheduled_end)
+  const scheduledStart = formatDateTime(cleaning.scheduledStart)
+  const scheduledEnd = formatDateTime(cleaning.scheduledEnd)
+  
+  // Don't render cleanings with invalid dates
+  if (scheduledStart.date === 'Invalid Date' || scheduledEnd.date === 'Invalid Date') {
+    console.warn('Cleaning with invalid dates found:', {
+      id: cleaning.id,
+      scheduledStart: cleaning.scheduledStart,
+      scheduledEnd: cleaning.scheduledEnd
+    })
+    return null
+  }
 
   const formatCurrency = (amount: number | null, currency: string) => {
     if (!amount) return null
@@ -92,24 +116,12 @@ export function CleaningCard({
     variant?: 'default' | 'destructive'
   }> => {
     switch (currentStatus) {
-      case 'needed':
-        return [
-          { label: 'Mark Scheduled', status: 'scheduled', icon: Calendar },
-          { label: 'Cancel', status: 'cancelled', icon: XCircle, variant: 'destructive' }
-        ]
       case 'scheduled':
-        return [
-          { label: 'Start Cleaning', status: 'in_progress', icon: PlayCircle },
-          { label: 'Cancel', status: 'cancelled', icon: XCircle, variant: 'destructive' }
-        ]
-      case 'in_progress':
         return [
           { label: 'Mark Completed', status: 'completed', icon: CheckCircle2 }
         ]
       case 'completed':
-        return [
-          { label: 'Verify', status: 'verified', icon: CheckCircle2 }
-        ]
+        return []  // No actions for completed cleanings
       default:
         return []
     }
@@ -118,16 +130,7 @@ export function CleaningCard({
   const statusActions = getStatusActions(cleaning.status)
 
   const urgencyColor = () => {
-    const now = new Date()
-    const scheduledTime = new Date(cleaning.scheduled_start)
-    const hoursUntil = (scheduledTime.getTime() - now.getTime()) / (1000 * 60 * 60)
-
-    if (cleaning.status === 'needed' && hoursUntil <= 2) {
-      return 'border-l-red-500 bg-red-50'
-    }
-    if (cleaning.status === 'scheduled' && hoursUntil <= 1) {
-      return 'border-l-orange-500 bg-orange-50'
-    }
+    // Simple - no urgency colors, keep it clean
     return ''
   }
 
@@ -147,7 +150,7 @@ export function CleaningCard({
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-2">
               <CardTitle className={cn("text-lg font-semibold", compact && "text-base")}>
-                {cleaning.cleaning_type.charAt(0).toUpperCase() + cleaning.cleaning_type.slice(1)} Cleaning
+                {cleaning.cleaningType.charAt(0).toUpperCase() + cleaning.cleaningType.slice(1)} Cleaning
               </CardTitle>
               <CleaningStatusBadge status={cleaning.status} />
             </div>
@@ -190,7 +193,7 @@ export function CleaningCard({
                 
                 {statusActions.length > 0 && <DropdownMenuSeparator />}
                 
-                {!cleaning.cleaner_id && onAssignCleaner && (
+                {!cleaning.cleanerId && onAssignCleaner && (
                   <DropdownMenuItem 
                     onClick={(e) => {
                       e.stopPropagation()
@@ -286,21 +289,21 @@ export function CleaningCard({
 
         {/* Actual times for completed cleanings */}
         {cleaning.status === 'completed' || cleaning.status === 'verified' ? (
-          cleaning.actual_start && cleaning.actual_end && (
+          cleaning.actualStart && cleaning.actualEnd && (
             <div className="flex items-center gap-4 text-sm text-green-700 bg-green-50 p-2 rounded">
               <div className="flex items-center gap-1">
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Completed:</span>
               </div>
               <span>
-                {formatDateTime(cleaning.actual_start).time} - {formatDateTime(cleaning.actual_end).time}
+                {formatDateTime(cleaning.actualStart).time} - {formatDateTime(cleaning.actualEnd).time}
               </span>
             </div>
           )
         ) : null}
 
         {/* Urgency indicator for overdue items */}
-        {cleaning.status === 'needed' && new Date(cleaning.scheduled_start) < new Date() && (
+        {cleaning.status === 'needed' && new Date(cleaning.scheduledStart) < new Date() && (
           <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
             <AlertCircle className="h-4 w-4" />
             <span className="font-medium">Overdue - needs immediate attention</span>

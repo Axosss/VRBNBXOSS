@@ -3,14 +3,15 @@ import { createClient } from '@/lib/supabase/server';
 import { updateCleaningSchema } from '@/lib/validations/cleaning';
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID } from '@/lib/utils';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { dbMappers } from '@/lib/mappers';
 import { z } from 'zod';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cleaningId = params.id;
+    const { id: cleaningId } = await params;
     
     if (!isValidUUID(cleaningId)) {
       throw new AppError('Invalid cleaning ID', 400);
@@ -64,8 +65,11 @@ export async function GET(
       throw new AppError(queryError.message, 500);
     }
     
+    // Map cleaning from DB format to frontend format with relations
+    const mappedCleaning = dbMappers.cleaning.withRelationsFromDB(cleaning);
+    
     return NextResponse.json(
-      createSuccessResponse(cleaning, 'Cleaning fetched successfully')
+      createSuccessResponse(mappedCleaning, 'Cleaning fetched successfully')
     );
     
   } catch (error) {
@@ -86,10 +90,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cleaningId = params.id;
+    const { id: cleaningId } = await params;
     const body = await request.json();
     
     if (!isValidUUID(cleaningId)) {
@@ -199,7 +203,7 @@ export async function PUT(
     }
     
     // Prepare update data
-    const cleanedData: any = {};
+    const cleanedData: Record<string, unknown> = {};
     
     if (updateData.cleanerId !== undefined) cleanedData.cleaner_id = updateData.cleanerId;
     if (updateData.scheduledStart !== undefined) cleanedData.scheduled_start = updateData.scheduledStart;
@@ -242,8 +246,11 @@ export async function PUT(
       throw new AppError(updateError.message, 400);
     }
     
+    // Map cleaning from DB format to frontend format
+    const mappedCleaning = dbMappers.cleaning.fromDB(updatedCleaning);
+    
     return NextResponse.json(
-      createSuccessResponse(updatedCleaning, 'Cleaning updated successfully')
+      createSuccessResponse(mappedCleaning, 'Cleaning updated successfully')
     );
     
   } catch (error) {
@@ -271,10 +278,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cleaningId = params.id;
+    const { id: cleaningId } = await params;
     
     if (!isValidUUID(cleaningId)) {
       throw new AppError('Invalid cleaning ID', 400);

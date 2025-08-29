@@ -40,8 +40,11 @@ export function CleanerSelector({
   const [availabilityStatus, setAvailabilityStatus] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    fetchCleaners({ active: true })
-  }, [fetchCleaners])
+    // Only fetch if cleaners are not already loaded
+    if (cleaners.length === 0 && !isLoading) {
+      fetchCleaners({ active: true })
+    }
+  }, []) // Empty dependency array - only run once on mount
 
   // Check cleaner availability if date and apartment are provided
   useEffect(() => {
@@ -112,7 +115,7 @@ export function CleanerSelector({
   return (
     <div className={cn("space-y-1", className)}>
       <Select
-        value={value || undefined}
+        value={value || ''}
         onValueChange={(selectedValue) => {
           onValueChange?.(selectedValue === 'none' ? null : selectedValue)
         }}

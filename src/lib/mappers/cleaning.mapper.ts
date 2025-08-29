@@ -44,48 +44,54 @@ function convertScheduledDateTime(scheduledDate: string, duration: string | null
  * @returns The cleaning in application format
  */
 export function mapCleaningFromDB(db: CleaningDB): Cleaning {
-  const { scheduled_start, scheduled_end } = convertScheduledDateTime(
-    db.scheduled_date,
-    db.duration
-  )
-
-  // Note: Many fields don't exist in current DB schema
-  // They will need to be added via migration
+  // Validate required dates
+  if (!db.scheduled_start || !db.scheduled_end) {
+    console.error('Cleaning has invalid dates:', {
+      id: db.id,
+      scheduled_start: db.scheduled_start,
+      scheduled_end: db.scheduled_end
+    })
+    
+    // Set default dates if missing (current time + 2 hours)
+    const now = new Date()
+    const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000)
+    
+    db.scheduled_start = db.scheduled_start || now.toISOString()
+    db.scheduled_end = db.scheduled_end || twoHoursLater.toISOString()
+  }
+  
+  // DB now has scheduled_start and scheduled_end directly
   return {
     id: db.id,
     
-    // IDs (keeping snake_case for Phase 1)
-    apartment_id: db.apartment_id,
-    cleaner_id: db.cleaner_id,
-    reservation_id: db.reservation_id,
-    owner_id: '', // TODO: Not in DB, needs migration
+    // IDs - now in camelCase
+    apartmentId: db.apartment_id,
+    cleanerId: db.cleaner_id,
+    reservationId: db.reservation_id,
+    ownerId: db.owner_id || '',
     
-    // Scheduling - converted from DB format
-    scheduled_start,
-    scheduled_end,
-    
-    // These fields don't exist in current DB - will be null/default
-    actual_start: null,
-    actual_end: null,
+    // Scheduling - now directly from DB
+    scheduledStart: db.scheduled_start,
+    scheduledEnd: db.scheduled_end,
+    actualStart: db.actual_start || null,
+    actualEnd: db.actual_end || null,
     
     status: db.status,
-    
-    // cleaning_type doesn't exist in DB yet
-    cleaning_type: 'standard', // Default value
+    cleaningType: db.cleaning_type || 'standard',
     
     instructions: db.instructions,
     supplies: db.supplies || {},
     
-    // These fields don't exist in current DB
-    photos: [],
-    cost: null,
-    currency: 'EUR', // Default value
-    rating: null,
-    notes: null,
+    // These fields are now in DB
+    photos: db.photos || [],
+    cost: db.cost || null,
+    currency: db.currency || 'EUR',
+    rating: db.rating || null,
+    notes: db.notes || null,
     
-    // Timestamps (keeping snake_case for Phase 1)
-    created_at: db.created_at,
-    updated_at: db.updated_at,
+    // Timestamps - now in camelCase
+    createdAt: db.created_at,
+    updatedAt: db.updated_at,
   }
 }
 
@@ -97,33 +103,28 @@ export function mapCleaningFromDB(db: CleaningDB): Cleaning {
 export function mapCleaningToDB(app: Partial<Cleaning>): Partial<CleaningDB> {
   const result: Partial<CleaningDB> = {}
   
-  // Map only defined fields
+  // Map only defined fields - using camelCase from app
   if (app.id !== undefined) result.id = app.id
-  if (app.apartment_id !== undefined) result.apartment_id = app.apartment_id
-  if (app.cleaner_id !== undefined) result.cleaner_id = app.cleaner_id
-  if (app.reservation_id !== undefined) result.reservation_id = app.reservation_id
+  if (app.apartmentId !== undefined) result.apartment_id = app.apartmentId
+  if (app.cleanerId !== undefined) result.cleaner_id = app.cleanerId
+  if (app.reservationId !== undefined) result.reservation_id = app.reservationId
+  if (app.ownerId !== undefined) result.owner_id = app.ownerId
   
-  // Convert start/end times to scheduled_date + duration
-  if (app.scheduled_start !== undefined) {
-    result.scheduled_date = app.scheduled_start
-    
-    // Calculate duration if end time is provided
-    if (app.scheduled_end) {
-      const start = new Date(app.scheduled_start)
-      const end = new Date(app.scheduled_end)
-      const durationMs = end.getTime() - start.getTime()
-      const hours = Math.floor(durationMs / (1000 * 60 * 60))
-      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60))
-      result.duration = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`
-    }
-  }
+  // Map new time fields directly (DB now uses scheduled_start/end, not scheduled_date)
+  if (app.scheduledStart !== undefined) result.scheduled_start = app.scheduledStart
+  if (app.scheduledEnd !== undefined) result.scheduled_end = app.scheduledEnd
+  if (app.actualStart !== undefined) result.actual_start = app.actualStart
+  if (app.actualEnd !== undefined) result.actual_end = app.actualEnd
   
   if (app.status !== undefined) result.status = app.status
+  if (app.cleaningType !== undefined) result.cleaning_type = app.cleaningType
   if (app.instructions !== undefined) result.instructions = app.instructions
   if (app.supplies !== undefined) result.supplies = app.supplies
-  
-  // Note: Many frontend fields can't be saved to current DB schema
-  // They need migration: actual_start/end, cleaning_type, photos, cost, rating, notes
+  if (app.photos !== undefined) result.photos = app.photos
+  if (app.cost !== undefined) result.cost = app.cost
+  if (app.currency !== undefined) result.currency = app.currency
+  if (app.rating !== undefined) result.rating = app.rating
+  if (app.notes !== undefined) result.notes = app.notes
   
   return result
 }

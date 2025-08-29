@@ -3,12 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID, generateStoragePath, isValidImageType } from '@/lib/utils'
 
 interface RouteParams {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id: apartmentId } = params
+    const { id: apartmentId } = await params
     
     if (!isValidUUID(apartmentId)) {
       throw new AppError('Invalid apartment ID', 400)
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id: apartmentId } = params
+    const { id: apartmentId } = await params
     const { searchParams } = new URL(request.url)
     const photoUrl = searchParams.get('url')
     

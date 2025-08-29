@@ -40,7 +40,7 @@ export function ReservationCard({
   onClick,
   className
 }: ReservationCardProps) {
-  const apartmentColor = getApartmentColor(reservation.apartment_id, apartments)
+  const apartmentColor = getApartmentColor(reservation.apartmentId, apartments)
   const statusColor = getReservationStatusColor(reservation.status)
   
   const sizeClasses = {
@@ -63,7 +63,7 @@ export function ReservationCard({
       {/* Header with guest name and badges */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <h3 className={cn('font-semibold truncate', apartmentColor.text)}>
-          {reservation.guest_name}
+          {reservation.guestName}
         </h3>
         
         <div className="flex items-center gap-1 shrink-0">
@@ -90,7 +90,7 @@ export function ReservationCard({
         <div className={cn('flex items-center gap-1 mb-2', apartmentColor.text)}>
           <MapPin className="h-3 w-3 opacity-60" />
           <span className="text-sm opacity-75 truncate">
-            {reservation.apartment_name}
+            {reservation.apartmentName}
           </span>
         </div>
       )}
@@ -99,7 +99,7 @@ export function ReservationCard({
       <div className={cn('flex items-center gap-1 mb-2', apartmentColor.text)}>
         <Calendar className="h-3 w-3 opacity-60" />
         <span className="text-sm">
-          {format(new Date(reservation.check_in), 'MMM d')} - {format(new Date(reservation.check_out), 'MMM d')}
+          {format(new Date(reservation.checkIn), 'MMM d')} - {format(new Date(reservation.checkOut), 'MMM d')}
         </span>
         <span className="text-xs opacity-60 ml-1">
           ({reservation.nights} nights)
@@ -110,7 +110,7 @@ export function ReservationCard({
       <div className={cn('flex items-center gap-1 mb-2', apartmentColor.text)}>
         <Users className="h-3 w-3 opacity-60" />
         <span className="text-sm">
-          {reservation.guest_count} {reservation.guest_count === 1 ? 'guest' : 'guests'}
+          {reservation.guestCount} {reservation.guestCount === 1 ? 'guest' : 'guests'}
         </span>
       </div>
 
@@ -119,20 +119,20 @@ export function ReservationCard({
         <div className={cn('flex items-center gap-1', apartmentColor.text)}>
           <DollarSign className="h-3 w-3 opacity-60" />
           <span className="text-sm font-medium">
-            {formatCurrency(reservation.total_price)}
+            {formatCurrency(reservation.totalPrice)}
           </span>
         </div>
       )}
 
       {/* Cleaning info if available */}
-      {reservation.cleaning_status && (
+      {reservation.cleaningStatus && (
         <div className={cn('flex items-center gap-1 mt-2 pt-2 border-t border-current border-opacity-20', apartmentColor.text)}>
           <Clock className="h-3 w-3 opacity-60" />
           <span className="text-xs opacity-75">
-            Cleaning: {reservation.cleaning_status}
-            {reservation.cleaning_date && (
+            Cleaning: {reservation.cleaningStatus}
+            {reservation.cleaningDate && (
               <span className="ml-1">
-                on {format(new Date(reservation.cleaning_date), 'MMM d')}
+                on {format(new Date(reservation.cleaningDate), 'MMM d')}
               </span>
             )}
           </span>
@@ -163,7 +163,7 @@ export function ReservationChip({
   onClick?: () => void
   className?: string
 }) {
-  const apartmentColor = getApartmentColor(reservation.apartment_id, apartments)
+  const apartmentColor = getApartmentColor(reservation.apartmentId, apartments)
   
   return (
     <div

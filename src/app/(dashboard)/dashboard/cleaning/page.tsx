@@ -8,8 +8,6 @@ import {
   Clock, 
   AlertCircle, 
   CheckCircle,
-  Users,
-  MapPin,
   Filter,
   List
 } from 'lucide-react'
@@ -73,14 +71,13 @@ export default function CleaningSchedulePage() {
   // Apply URL filters
   useEffect(() => {
     const filters = {
-      ...cleaningFilters,
       apartment_id: apartmentParam || undefined,
       cleaner_id: cleanerParam || undefined,
       status: (statusParam as CleaningStatus) || undefined
     }
     setCleaningFilters(filters)
     fetchCleanings(filters)
-  }, [apartmentParam, cleanerParam, statusParam])
+  }, [apartmentParam, cleanerParam, statusParam, fetchCleanings, setCleaningFilters])
 
   const handleCleaningClick = (cleaning: Cleaning) => {
     router.push(`/dashboard/cleaning/${cleaning.id}`)
@@ -139,21 +136,25 @@ export default function CleaningSchedulePage() {
     router.replace('/dashboard/cleaning')
   }
 
-  // Calculate stats
+  // Calculate simple stats
   const stats = {
     total: cleanings.length,
-    pending: cleanings.filter(c => c.status === 'needed' || c.status === 'scheduled').length,
-    inProgress: cleanings.filter(c => c.status === 'in_progress').length,
-    completed: cleanings.filter(c => c.status === 'completed' || c.status === 'verified').length,
-    overdue: cleanings.filter(c => 
-      (c.status === 'needed' || c.status === 'scheduled') && 
-      new Date(c.scheduled_start) < new Date()
-    ).length
+    scheduled: cleanings.filter(c => c.status === 'scheduled').length,
+    completed: cleanings.filter(c => c.status === 'completed').length
   }
 
   const upcomingCleanings = cleanings
-    .filter(c => c.status === 'scheduled' || c.status === 'needed')
-    .sort((a, b) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())
+    .filter(c => c.status === 'scheduled')
+    .filter(c => c.scheduledStart && c.scheduledEnd) // Filter out cleanings with invalid dates
+    .sort((a, b) => {
+      const dateA = new Date(a.scheduledStart)
+      const dateB = new Date(b.scheduledStart)
+      // Check for valid dates before comparing
+      if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+        return 0
+      }
+      return dateA.getTime() - dateB.getTime()
+    })
     .slice(0, 5)
 
   if (error) {
@@ -220,31 +221,25 @@ export default function CleaningSchedulePage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Simple Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cleanings</CardTitle>
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats.pending} pending
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.inProgress}</div>
-            <p className="text-xs text-muted-foreground">
-              Currently being cleaned
-            </p>
+            <div className="text-2xl font-bold">{stats.scheduled}</div>
           </CardContent>
         </Card>
 
@@ -255,22 +250,6 @@ export default function CleaningSchedulePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completed}</div>
-            <p className="text-xs text-muted-foreground">
-              This period
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
-            <p className="text-xs text-muted-foreground">
-              Need attention
-            </p>
           </CardContent>
         </Card>
       </div>

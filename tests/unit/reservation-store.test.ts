@@ -13,26 +13,26 @@ const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>
 // Test data factory
 const createMockReservation = (overrides: Partial<Reservation> = {}): Reservation => ({
   id: 'test-reservation-1',
-  apartment_id: 'test-apartment-1',
-  owner_id: 'test-owner-1',
-  guest_id: 'test-guest-1',
+  apartmentId: 'test-apartment-1',
+  ownerId: 'test-owner-1',
+  guestId: 'test-guest-1',
   platform: 'airbnb',
-  platform_reservation_id: 'AIRBNB123',
-  check_in: '2024-12-25',
-  check_out: '2024-12-28',
-  guest_count: 2,
-  total_price: 450,
-  cleaning_fee: 50,
-  platform_fee: 25,
+  platformReservationId: 'AIRBNB123',
+  checkIn: '2024-12-25',
+  checkOut: '2024-12-28',
+  guestCount: 2,
+  totalPrice: 450,
+  cleaningFee: 50,
+  platformFee: 25,
   currency: 'USD',
   status: 'confirmed',
   notes: 'Test reservation',
-  contact_info: { phone: '+1234567890' },
-  created_at: '2024-12-01T00:00:00Z',
-  updated_at: '2024-12-01T00:00:00Z',
+  contactInfo: { phone: '+1234567890' },
+  createdAt: '2024-12-01T00:00:00Z',
+  updatedAt: '2024-12-01T00:00:00Z',
   apartment: {
     id: 'test-apartment-1',
-    owner_id: 'test-owner-1',
+    ownerId: 'test-owner-1',
     name: 'Test Apartment',
     address: {
       street: '123 Test St',
@@ -416,7 +416,7 @@ describe('ReservationStore', () => {
       const originalReservation = createMockReservation()
       const updatedReservation = createMockReservation({
         ...mockUpdateData,
-        updated_at: '2024-12-02T00:00:00Z',
+        updatedAt: '2024-12-02T00:00:00Z',
       })
       
       mockFetch.mockResolvedValueOnce(

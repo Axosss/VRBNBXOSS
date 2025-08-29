@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { apartmentUpdateSchema } from '@/lib/validations'
 import { createErrorResponse, createSuccessResponse, AppError, isValidUUID } from '@/lib/utils'
+import { dbMappers } from '@/lib/mappers'
 import { z } from 'zod'
 
 interface RouteParams {
@@ -40,8 +41,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       throw new AppError(queryError.message, 500)
     }
     
+    // Map apartment from DB format to frontend format
+    const mappedApartment = dbMappers.apartment.fromDB(apartment)
+    
     return NextResponse.json(
-      createSuccessResponse(apartment)
+      createSuccessResponse(mappedApartment)
     )
     
   } catch (error) {
@@ -73,8 +77,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       throw new AppError('Unauthorized', 401)
     }
     
-    // Prepare update data
-    const updateData: any = {}
+    // Map update data to DB format
+    const updateData: Record<string, unknown> = {}
     if (updates.name !== undefined) updateData.name = updates.name
     if (updates.address !== undefined) updateData.address = updates.address
     if (updates.capacity !== undefined) updateData.capacity = updates.capacity
@@ -82,6 +86,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (updates.bathrooms !== undefined) updateData.bathrooms = updates.bathrooms
     if (updates.amenities !== undefined) updateData.amenities = updates.amenities
     if (updates.accessCodes !== undefined) updateData.access_codes = updates.accessCodes
+    if (updates.squareFeet !== undefined) updateData.square_feet = updates.squareFeet
+    if (updates.status !== undefined) updateData.status = updates.status
+    if (updates.notes !== undefined) updateData.notes = updates.notes
     
     // Update apartment
     const { data: apartment, error: updateError } = await supabase
@@ -99,8 +106,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       throw new AppError(updateError.message, 400)
     }
     
+    // Map apartment from DB format to frontend format
+    const mappedApartment = dbMappers.apartment.fromDB(apartment)
+    
     return NextResponse.json(
-      createSuccessResponse(apartment, 'Apartment updated successfully')
+      createSuccessResponse(mappedApartment, 'Apartment updated successfully')
     )
     
   } catch (error) {
@@ -160,8 +170,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       throw new AppError(deleteError.message, 500)
     }
     
+    // Map apartment from DB format to frontend format
+    const mappedApartment = dbMappers.apartment.fromDB(apartment)
+    
     return NextResponse.json(
-      createSuccessResponse(apartment, 'Apartment deleted successfully')
+      createSuccessResponse(mappedApartment, 'Apartment deleted successfully')
     )
     
   } catch (error) {
