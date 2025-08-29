@@ -109,10 +109,10 @@ export function CalendarMonthView({
                         }}
                       >
                         <div className="font-medium truncate">
-                          {reservation.guest_name}
+                          {reservation.guestName}
                         </div>
                         <div className="text-xs opacity-75">
-                          {reservation.apartment_name}
+                          {reservation.apartmentName}
                         </div>
                       </div>
                     )

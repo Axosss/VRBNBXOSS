@@ -13,22 +13,22 @@ export interface CalendarFilters {
 
 export interface CalendarReservation {
   id: string
-  apartment_id: string
-  apartment_name: string
-  guest_name: string
+  apartmentId: string
+  apartmentName: string
+  guestName: string
   platform: 'airbnb' | 'vrbo' | 'direct' | 'booking_com'
-  check_in: string
-  check_out: string
-  guest_count: number
-  total_price: number
+  checkIn: string
+  checkOut: string
+  guestCount: number
+  totalPrice: number
   status: 'draft' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'archived'
   notes?: string
-  contact_info?: Record<string, any>
+  contactInfo?: Record<string, any>
   nights: number
   // Cleaning information
-  cleaning_id?: string
-  cleaning_status?: 'needed' | 'scheduled' | 'in_progress' | 'completed' | 'verified' | 'cancelled'
-  cleaning_date?: string
+  cleaningId?: string
+  cleaningStatus?: 'needed' | 'scheduled' | 'in_progress' | 'completed' | 'verified' | 'cancelled'
+  cleaningDate?: string
 }
 
 export interface CalendarEvent {
@@ -46,23 +46,23 @@ export interface CalendarEvent {
 
 export interface CalendarCleaning {
   id: string
-  apartment_id: string
-  apartment_name: string
-  cleaner_name?: string
-  scheduled_date: string
+  apartmentId: string
+  apartmentName: string
+  cleanerName?: string
+  scheduledDate: string
   duration?: string
   status: 'needed' | 'scheduled' | 'in_progress' | 'completed' | 'verified' | 'cancelled'
   instructions?: string
-  reservation_id?: string
+  reservationId?: string
 }
 
 export interface CalendarMaintenance {
   id: string
-  apartment_id: string
-  apartment_name: string
+  apartmentId: string
+  apartmentName: string
   title: string
   description?: string
-  scheduled_date: string
+  scheduledDate: string
   duration?: string
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'urgent'
@@ -70,27 +70,27 @@ export interface CalendarMaintenance {
 
 export interface CalendarBlocked {
   id: string
-  apartment_id: string
-  apartment_name: string
-  start_date: string
-  end_date: string
+  apartmentId: string
+  apartmentName: string
+  startDate: string
+  endDate: string
   reason: 'owner_use' | 'maintenance' | 'seasonal' | 'other'
   notes?: string
 }
 
 export interface AvailabilitySlot {
-  gap_start: string
-  gap_end: string
-  gap_days: number
+  gapStart: string
+  gapEnd: string
+  gapDays: number
 }
 
 export interface CalendarStats {
-  total_nights: number
-  occupied_nights: number
-  occupancy_rate: number
-  total_revenue: number
-  total_reservations: number
-  platform_breakdown: Record<string, number>
+  totalNights: number
+  occupiedNights: number
+  occupancyRate: number
+  totalRevenue: number
+  totalReservations: number
+  platformBreakdown: Record<string, number>
 }
 
 export interface CalendarData {
@@ -131,9 +131,9 @@ export interface AvailabilityResult {
   available: boolean
   conflicts?: {
     id: string
-    check_in: string
-    check_out: string
-    guest_name: string
+    checkIn: string
+    checkOut: string
+    guestName: string
   }[]
   suggestions?: AvailabilitySlot[]
 }

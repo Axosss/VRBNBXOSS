@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CalendarView, QuickReservation } from '@/types/calendar'
 import { useCalendar, useCalendarNavigation } from '@/lib/hooks/use-calendar'
 import { CalendarNavigation } from '@/components/calendar/calendar-navigation'
@@ -31,8 +31,8 @@ export default function CalendarPage() {
   } = useCalendarNavigation()
 
   // Calculate date range based on current view
-  const getDateRange = () => {
-    const start = new Date(currentDate)
+  const getDateRange = (dateToUse: Date = currentDate) => {
+    const start = new Date(dateToUse)
 
     switch (view) {
       case 'day':
@@ -95,6 +95,16 @@ export default function CalendarPage() {
     enableRealtime: true
   })
 
+  // Sync filters when currentDate or view changes  
+  useEffect(() => {
+    const newRange = getDateRange(currentDate)
+    setFilters({
+      startDate: newRange.startDate,
+      endDate: newRange.endDate,
+      view
+    })
+  }, [currentDate, view])
+
   const handleViewChange = (newView: CalendarView) => {
     setView(newView)
     const newRange = getDateRange()
@@ -106,25 +116,35 @@ export default function CalendarPage() {
   }
 
   const handleDateNavigation = (direction: 'prev' | 'next') => {
+    // Calculate the new date based on the direction
+    const newDate = new Date(currentDate)
+    if (view === 'month') {
+      newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1))
+    } else if (view === 'week') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7))
+    } else if (view === 'day') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1))
+    }
+    
+    // Update navigation state
     navigateDate(direction)
-    setTimeout(() => {
-      const newRange = getDateRange()
-      setFilters({
-        startDate: newRange.startDate,
-        endDate: newRange.endDate
-      })
-    }, 0)
+    
+    // Calculate new range with the new date
+    const newRange = getDateRange(newDate)
+    setFilters({
+      startDate: newRange.startDate,
+      endDate: newRange.endDate
+    })
   }
 
   const handleTodayClick = () => {
+    const today = new Date()
     goToToday()
-    setTimeout(() => {
-      const newRange = getDateRange()
-      setFilters({
-        startDate: newRange.startDate,
-        endDate: newRange.endDate
-      })
-    }, 0)
+    const newRange = getDateRange(today)
+    setFilters({
+      startDate: newRange.startDate,
+      endDate: newRange.endDate
+    })
   }
 
   const handleApartmentFilter = (apartmentIds: string[]) => {

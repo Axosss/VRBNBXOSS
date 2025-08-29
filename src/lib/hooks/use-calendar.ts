@@ -101,14 +101,14 @@ export function useCalendar(options: UseCalendarOptions = {}): CalendarState & C
       
       abortControllerRef.current = new AbortController()
       
+      const filters = newFilters ? { ...state.filters, ...newFilters } : state.filters
+      
       setState(prev => ({ 
         ...prev, 
         loading: true, 
         error: null,
-        filters: newFilters ? { ...prev.filters, ...newFilters } : prev.filters
+        filters: filters
       }))
-
-      const filters = newFilters ? { ...state.filters, ...newFilters } : state.filters
 
       // Build query parameters
       const queryParams = new URLSearchParams({
@@ -172,11 +172,8 @@ export function useCalendar(options: UseCalendarOptions = {}): CalendarState & C
 
   // Set filters
   const setFilters = useCallback((newFilters: Partial<CalendarFilters>) => {
-    setState(prev => ({
-      ...prev,
-      filters: { ...prev.filters, ...newFilters }
-    }))
-  }, [])
+    fetchCalendarData(newFilters)
+  }, [fetchCalendarData])
 
   // Set view
   const setView = useCallback((view: CalendarView) => {
