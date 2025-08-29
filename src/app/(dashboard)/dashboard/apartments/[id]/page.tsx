@@ -312,7 +312,7 @@ export default function ApartmentDetailPage() {
           </Card>
 
           {/* Access Codes */}
-          {apartment.access_codes && (
+          {apartment.accessCodes && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Access Codes</CardTitle>
@@ -330,7 +330,7 @@ export default function ApartmentDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* WiFi */}
-                {apartment.access_codes.wifi && (
+                {apartment.accessCodes.wifi && (
                   <div>
                     <p className="text-sm font-medium mb-2">WiFi</p>
                     <div className="space-y-2">
@@ -338,12 +338,12 @@ export default function ApartmentDetailPage() {
                         <span className="text-sm text-muted-foreground">Network:</span>
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-mono">
-                            {apartment.access_codes.wifi.network}
+                            {apartment.accessCodes.wifi.network}
                           </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleCopyToClipboard(apartment.access_codes!.wifi!.network, 'wifi-network')}
+                            onClick={() => handleCopyToClipboard(apartment.accessCodes!.wifi!.network, 'wifi-network')}
                           >
                             {copiedCode === 'wifi-network' ? (
                               <Check className="h-3 w-3" />
@@ -357,13 +357,13 @@ export default function ApartmentDetailPage() {
                         <span className="text-sm text-muted-foreground">Password:</span>
                         <div className="flex items-center gap-1">
                           <span className="text-sm font-mono">
-                            {showAccessCodes ? apartment.access_codes.wifi.password : '••••••••'}
+                            {showAccessCodes ? apartment.accessCodes.wifi.password : '••••••••'}
                           </span>
                           {showAccessCodes && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleCopyToClipboard(apartment.access_codes!.wifi!.password, 'wifi-password')}
+                              onClick={() => handleCopyToClipboard(apartment.accessCodes!.wifi!.password, 'wifi-password')}
                             >
                               {copiedCode === 'wifi-password' ? (
                                 <Check className="h-3 w-3" />
@@ -379,18 +379,18 @@ export default function ApartmentDetailPage() {
                 )}
 
                 {/* Door Code */}
-                {apartment.access_codes.door && (
+                {apartment.accessCodes.door && (
                   <div>
                     <p className="text-sm font-medium mb-1">Door Code</p>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-mono">
-                        {showAccessCodes ? apartment.access_codes.door : '••••••'}
+                        {showAccessCodes ? apartment.accessCodes.door : '••••••'}
                       </span>
                       {showAccessCodes && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleCopyToClipboard(apartment.access_codes!.door!, 'door')}
+                          onClick={() => handleCopyToClipboard(apartment.accessCodes!.door!, 'door')}
                         >
                           {copiedCode === 'door' ? (
                             <Check className="h-3 w-3" />
@@ -404,18 +404,18 @@ export default function ApartmentDetailPage() {
                 )}
 
                 {/* Mailbox Code */}
-                {apartment.access_codes.mailbox && (
+                {apartment.accessCodes.mailbox && (
                   <div>
                     <p className="text-sm font-medium mb-1">Mailbox Code</p>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-mono">
-                        {showAccessCodes ? apartment.access_codes.mailbox : '••••••'}
+                        {showAccessCodes ? apartment.accessCodes.mailbox : '••••••'}
                       </span>
                       {showAccessCodes && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleCopyToClipboard(apartment.access_codes!.mailbox!, 'mailbox')}
+                          onClick={() => handleCopyToClipboard(apartment.accessCodes!.mailbox!, 'mailbox')}
                         >
                           {copiedCode === 'mailbox' ? (
                             <Check className="h-3 w-3" />
@@ -429,11 +429,11 @@ export default function ApartmentDetailPage() {
                 )}
 
                 {/* Additional Codes */}
-                {apartment.access_codes.additional && Object.keys(apartment.access_codes.additional).length > 0 && (
+                {apartment.accessCodes.additional && Object.keys(apartment.accessCodes.additional).length > 0 && (
                   <div>
                     <p className="text-sm font-medium mb-2">Additional</p>
                     <div className="space-y-2">
-                      {Object.entries(apartment.access_codes.additional).map(([name, code]) => (
+                      {Object.entries(apartment.accessCodes.additional).map(([name, code]) => (
                         <div key={name} className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">{name}:</span>
                           <div className="flex items-center gap-1">

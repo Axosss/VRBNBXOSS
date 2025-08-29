@@ -146,7 +146,7 @@ export default function EditApartmentPage() {
               bedrooms: selectedApartment.bedrooms,
               bathrooms: selectedApartment.bathrooms,
               amenities: selectedApartment.amenities,
-              accessCodes: selectedApartment.access_codes,
+              accessCodes: selectedApartment.accessCodes,
             }}
             onSubmit={handleSubmit}
             onCancel={handleCancel}

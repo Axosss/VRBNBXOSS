@@ -77,18 +77,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       throw new AppError('Unauthorized', 401)
     }
     
-    // Map update data to DB format
-    const updateData: Record<string, unknown> = {}
-    if (updates.name !== undefined) updateData.name = updates.name
-    if (updates.address !== undefined) updateData.address = updates.address
-    if (updates.capacity !== undefined) updateData.capacity = updates.capacity
-    if (updates.bedrooms !== undefined) updateData.bedrooms = updates.bedrooms
-    if (updates.bathrooms !== undefined) updateData.bathrooms = updates.bathrooms
-    if (updates.amenities !== undefined) updateData.amenities = updates.amenities
-    if (updates.accessCodes !== undefined) updateData.access_codes = updates.accessCodes
-    if (updates.squareFeet !== undefined) updateData.square_feet = updates.squareFeet
-    if (updates.status !== undefined) updateData.status = updates.status
-    if (updates.notes !== undefined) updateData.notes = updates.notes
+    // Use mapper to convert to DB format
+    const updateData = dbMappers.apartment.toDB(updates)
     
     // Update apartment
     const { data: apartment, error: updateError } = await supabase

@@ -64,13 +64,14 @@ export function mapApartmentToDB(app: Partial<Apartment>): Partial<ApartmentDB> 
   
   // Map only defined fields
   if (app.id !== undefined) result.id = app.id
-  if (app.owner_id !== undefined) result.owner_id = app.owner_id
+  if (app.ownerId !== undefined) result.owner_id = app.ownerId
   if (app.name !== undefined) result.name = app.name
   if (app.address !== undefined) result.address = app.address
   if (app.capacity !== undefined) result.capacity = app.capacity
   if (app.bedrooms !== undefined) result.bedrooms = app.bedrooms
   if (app.bathrooms !== undefined) result.bathrooms = app.bathrooms
   if (app.amenities !== undefined) result.amenities = app.amenities
+  if (app.squareFeet !== undefined) result.square_feet = app.squareFeet
   
   // Photos - convert objects back to strings for DB
   if (app.photos !== undefined) {
@@ -79,16 +80,13 @@ export function mapApartmentToDB(app: Partial<Apartment>): Partial<ApartmentDB> 
     )
   }
   
-  // Access codes - handle both formats
-  if (app.access_codes !== undefined) {
-    result.access_codes = app.access_codes
-  }
-  // Also check for camelCase version (for future)
-  if ((app as any).accessCodes !== undefined) {
-    result.access_codes = (app as any).accessCodes
+  // Access codes - use camelCase from frontend
+  if (app.accessCodes !== undefined) {
+    result.access_codes = app.accessCodes
   }
   
   if (app.status !== undefined) result.status = app.status
+  if (app.notes !== undefined) result.notes = app.notes
   
   // Don't send timestamps to DB (they're auto-managed)
   
