@@ -17,10 +17,16 @@ import {
   ExternalLink,
   CheckCircle,
   Clock,
-  AlertCircle 
+  AlertCircle,
+  Save,
+  X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { ReservationStatusBadge } from '@/components/reservations/reservation-status-badge'
 import { PlatformBadge } from '@/components/reservations/platform-badge'
@@ -37,6 +43,9 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
   const [hasTriedToLoad, setHasTriedToLoad] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editedData, setEditedData] = useState<any>(null)
+  const [isSaving, setIsSaving] = useState(false)
   
   const { 
     selectedReservation, 
@@ -56,7 +65,44 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
   }, [resolvedParams.id, fetchReservation])
 
   const handleEdit = () => {
-    router.push(`/dashboard/reservations/${resolvedParams.id}/edit`)
+    setIsEditMode(true)
+    setEditedData({
+      checkIn: selectedReservation?.checkIn,
+      checkOut: selectedReservation?.checkOut,
+      guestCount: selectedReservation?.guestCount,
+      totalPrice: selectedReservation?.totalPrice,
+      cleaningFee: selectedReservation?.cleaningFee || 0,
+      platformFee: selectedReservation?.platformFee || 0,
+      platform: selectedReservation?.platform,
+      notes: selectedReservation?.notes || '',
+      contactInfo: selectedReservation?.contactInfo || {},
+      status: selectedReservation?.status
+    })
+  }
+
+  const handleSave = async () => {
+    if (!selectedReservation || !editedData) return
+    
+    try {
+      setIsSaving(true)
+      await updateReservation(selectedReservation.id, editedData)
+      await fetchReservation(resolvedParams.id)
+      setIsEditMode(false)
+      setEditedData(null)
+    } catch (error) {
+      console.error('Failed to save changes:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleCancel = () => {
+    setIsEditMode(false)
+    setEditedData(null)
+  }
+
+  const updateField = (field: string, value: any) => {
+    setEditedData((prev: any) => ({ ...prev, [field]: value }))
   }
 
   const handleDelete = async () => {
@@ -110,8 +156,8 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
 
   const getDuration = () => {
     if (!selectedReservation) return 0
-    const checkIn = new Date(selectedReservation.check_in)
-    const checkOut = new Date(selectedReservation.check_out)
+    const checkIn = new Date(selectedReservation.checkIn)
+    const checkOut = new Date(selectedReservation.checkOut)
     const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime())
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   }
@@ -228,7 +274,9 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {selectedReservation.guest?.name || 'Guest'} Reservation
+              {selectedReservation.guest?.name || 
+               (selectedReservation.contactInfo as any)?.name || 
+               'Guest'} Reservation
             </h1>
             <p className="text-muted-foreground">
               Reservation details and management
@@ -293,21 +341,50 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
                     <Calendar className="h-4 w-4" />
                     Check-in
                   </h4>
-                  <p className="text-muted-foreground">{formatDate(selectedReservation.check_in)}</p>
+                  {isEditMode ? (
+                    <Input
+                      type="date"
+                      value={editedData?.checkIn || ''}
+                      onChange={(e) => updateField('checkIn', e.target.value)}
+                      className="w-full"
+                    />
+                  ) : (
+                    <p className="text-muted-foreground">{formatDate(selectedReservation.checkIn)}</p>
+                  )}
                 </div>
                 <div>
                   <h4 className="font-semibold mb-2 flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     Check-out
                   </h4>
-                  <p className="text-muted-foreground">{formatDate(selectedReservation.check_out)}</p>
+                  {isEditMode ? (
+                    <Input
+                      type="date"
+                      value={editedData?.checkOut || ''}
+                      onChange={(e) => updateField('checkOut', e.target.value)}
+                      className="w-full"
+                    />
+                  ) : (
+                    <p className="text-muted-foreground">{formatDate(selectedReservation.checkOut)}</p>
+                  )}
                 </div>
               </div>
 
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>{selectedReservation.guest_count} guests</span>
+                  {isEditMode ? (
+                    <Input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={editedData?.guestCount || 1}
+                      onChange={(e) => updateField('guestCount', parseInt(e.target.value) || 1)}
+                      className="w-20 h-8"
+                    />
+                  ) : (
+                    <span>{selectedReservation.guestCount} guests</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -328,7 +405,11 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
             <CardContent className="space-y-4">
               <div>
                 <h4 className="font-semibold mb-2">Primary Guest</h4>
-                <p className="text-muted-foreground">{selectedReservation.guest?.name || 'No guest information'}</p>
+                <p className="text-muted-foreground">
+                  {selectedReservation.guest?.name || 
+                   (selectedReservation.contactInfo as any)?.name || 
+                   'No guest information'}
+                </p>
               </div>
               
               {selectedReservation.guest && (
@@ -358,12 +439,12 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
                 </div>
               )}
 
-              {selectedReservation.contact_info && (
+              {selectedReservation.contactInfo && (
                 <div>
                   <h4 className="font-semibold mb-2">Additional Contact Info</h4>
                   <div className="space-y-2 text-sm">
-                    {typeof selectedReservation.contact_info === 'object' ? (
-                      Object.entries(selectedReservation.contact_info).map(([key, value]) => (
+                    {typeof selectedReservation.contactInfo === 'object' ? (
+                      Object.entries(selectedReservation.contactInfo).map(([key, value]) => (
                         <div key={key} className="flex justify-between">
                           <span className="text-muted-foreground capitalize">
                             {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:
@@ -372,7 +453,7 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
                         </div>
                       ))
                     ) : (
-                      <p className="text-muted-foreground">{String(selectedReservation.contact_info)}</p>
+                      <p className="text-muted-foreground">{String(selectedReservation.contactInfo)}</p>
                     )}
                   </div>
                 </div>
@@ -394,11 +475,11 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
                 <PlatformBadge platform={selectedReservation.platform} />
               </div>
               
-              {selectedReservation.platform_reservation_id && (
+              {selectedReservation.platformReservationId && (
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Platform Reservation ID:</span>
                   <code className="px-2 py-1 bg-muted rounded text-sm">
-                    {selectedReservation.platform_reservation_id}
+                    {selectedReservation.platformReservationId}
                   </code>
                 </div>
               )}
@@ -431,23 +512,49 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button
-                onClick={handleEdit}
-                className="w-full gap-2"
-                variant="outline"
-              >
-                <Edit className="h-4 w-4" />
-                Edit Reservation
-              </Button>
-              
-              <Button
-                onClick={handleDelete}
-                variant="destructive"
-                className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
+              {isEditMode ? (
+                <>
+                  <Button
+                    onClick={handleSave}
+                    className="w-full gap-2"
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <LoadingSpinner className="h-4 w-4" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    Save Changes
+                  </Button>
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    className="w-full gap-2"
+                    disabled={isSaving}
+                  >
+                    <X className="h-4 w-4" />
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleEdit}
+                    className="w-full gap-2"
+                    variant="outline"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit Reservation
+                  </Button>
+                  
+                  <Button
+                    onClick={handleDelete}
+                    variant="destructive"
+                    className="w-full gap-2 bg-red-600 hover:bg-red-700 text-white border-red-600"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <>
                     <LoadingSpinner className="h-4 w-4 text-white" />
                     Deleting...
                   </>
@@ -456,8 +563,10 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
                     <Trash2 className="h-4 w-4 text-white" />
                     Delete Reservation
                   </>
-                )}
-              </Button>
+                    )}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -472,25 +581,36 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Total Price:</span>
-                <span className="font-semibold">
-                  {formatCurrency(selectedReservation.total_price, selectedReservation.currency)}
-                </span>
+                {isEditMode ? (
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editedData?.totalPrice || 0}
+                    onChange={(e) => updateField('totalPrice', parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right"
+                  />
+                ) : (
+                  <span className="font-semibold">
+                    {formatCurrency(selectedReservation.totalPrice, selectedReservation.currency)}
+                  </span>
+                )}
               </div>
               
-              {selectedReservation.cleaning_fee > 0 && (
+              {selectedReservation.cleaningFee && selectedReservation.cleaningFee > 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Cleaning Fee:</span>
                   <span>
-                    {formatCurrency(selectedReservation.cleaning_fee, selectedReservation.currency)}
+                    {formatCurrency(selectedReservation.cleaningFee, selectedReservation.currency)}
                   </span>
                 </div>
               )}
               
-              {selectedReservation.platform_fee > 0 && (
+              {selectedReservation.platformFee && selectedReservation.platformFee > 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Platform Fee:</span>
                   <span>
-                    {formatCurrency(selectedReservation.platform_fee, selectedReservation.currency)}
+                    {formatCurrency(selectedReservation.platformFee, selectedReservation.currency)}
                   </span>
                 </div>
               )}
@@ -499,7 +619,7 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Per Night:</span>
                   <span>
-                    {formatCurrency(selectedReservation.total_price / getDuration(), selectedReservation.currency)}
+                    {formatCurrency(selectedReservation.totalPrice / getDuration(), selectedReservation.currency)}
                   </span>
                 </div>
               </div>
@@ -515,15 +635,15 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
               <div className="flex items-center gap-2 text-sm">
                 <div className="w-2 h-2 bg-muted-foreground rounded-full" />
                 <span className="text-muted-foreground">
-                  Created: {new Date(selectedReservation.created_at).toLocaleDateString()}
+                  Created: {new Date(selectedReservation.createdAt).toLocaleDateString()}
                 </span>
               </div>
               
-              {selectedReservation.updated_at !== selectedReservation.created_at && (
+              {selectedReservation.updatedAt !== selectedReservation.createdAt && (
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-2 h-2 bg-blue-500 rounded-full" />
                   <span className="text-muted-foreground">
-                    Updated: {new Date(selectedReservation.updated_at).toLocaleDateString()}
+                    Updated: {new Date(selectedReservation.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
               )}

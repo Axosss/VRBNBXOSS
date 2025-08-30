@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     console.log('Quick Add API - Parsed reservation:', JSON.stringify(quickReservation, null, 2))
 
     // Create Supabase client and get user
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
 
     if (userError) {
@@ -119,8 +119,8 @@ export async function POST(request: NextRequest) {
       check_out: quickReservation.checkOut,
       guest_count: quickReservation.guestCount,
       total_price: quickReservation.totalPrice,
-      cleaning_fee: 0,
-      platform_fee: 0,
+      cleaning_fee: quickReservation.cleaningFee || 0,
+      platform_fee: quickReservation.platformFee || 0,
       currency: 'USD',
       status: 'confirmed',
       notes: sanitizeText(quickReservation.notes),
@@ -207,24 +207,39 @@ export async function POST(request: NextRequest) {
       // Don't fail the reservation creation if cleaning task fails
     }
 
-    return createSuccessResponse(calendarReservation, 'Reservation created successfully')
+    return NextResponse.json(
+      createSuccessResponse(calendarReservation, 'Reservation created successfully'),
+      { status: 201 }
+    )
 
   } catch (error) {
     console.error('Quick Add API - Error:', error)
 
     if (error instanceof AppError) {
-      return createErrorResponse(error.message, error.statusCode)
+      return NextResponse.json(
+        createErrorResponse(error.message, error.statusCode),
+        { status: error.statusCode }
+      )
     }
 
     if (error instanceof Error && error.name === 'ZodError') {
-      return createErrorResponse('Invalid reservation data', 400)
+      return NextResponse.json(
+        createErrorResponse('Invalid reservation data', 400),
+        { status: 400 }
+      )
     }
 
     if (error instanceof Error && error.message.includes('duplicate key value')) {
-      return createErrorResponse('Reservation conflicts with existing booking', 409)
+      return NextResponse.json(
+        createErrorResponse('Reservation conflicts with existing booking', 409),
+        { status: 409 }
+      )
     }
 
-    return createErrorResponse('Failed to create reservation', 500)
+    return NextResponse.json(
+      createErrorResponse('Failed to create reservation', 500),
+      { status: 500 }
+    )
   }
 }
 

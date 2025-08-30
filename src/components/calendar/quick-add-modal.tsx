@@ -24,14 +24,14 @@ import {
 } from '@/components/ui/dialog'
 import { PlatformBadge } from '@/components/reservations/platform-badge'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
-import { Calendar, Users, DollarSign, AlertCircle } from 'lucide-react'
+import { Calendar, Users, DollarSign, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface QuickAddModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (reservation: QuickReservation) => Promise<void>
-  apartments: Array<{ id: string; name: string }>
+  apartments: Array<{ id: string; name: string; capacity?: number }>
   selectedDate?: Date | null
   selectedApartment?: string | null
 }
@@ -53,6 +53,8 @@ export function QuickAddModal({
 }: QuickAddModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
+  const [availabilityStatus, setAvailabilityStatus] = useState<'unchecked' | 'checking' | 'available' | 'unavailable'>('unchecked')
   
   // Form data
   const [formData, setFormData] = useState<QuickReservation>({
@@ -63,6 +65,8 @@ export function QuickAddModal({
     guestCount: 1,
     platform: 'direct',
     totalPrice: 0,
+    cleaningFee: 0,
+    platformFee: 0,
     notes: ''
   })
 
@@ -81,11 +85,58 @@ export function QuickAddModal({
         guestCount: 1,
         platform: 'direct',
         totalPrice: 0,
+        cleaningFee: 0,
+        platformFee: 0,
         notes: ''
       })
       setErrors({})
+      setAvailabilityStatus('unchecked')
     }
   }, [isOpen, selectedDate, selectedApartment])
+
+  // Auto-check availability when dates or apartment change
+  useEffect(() => {
+    if (!isOpen) return
+    
+    const checkAvailability = async () => {
+      if (formData.apartmentId && formData.checkIn && formData.checkOut) {
+        setIsCheckingAvailability(true)
+        setAvailabilityStatus('checking')
+        
+        try {
+          const response = await fetch('/api/calendar/availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              apartmentId: formData.apartmentId,
+              checkIn: formData.checkIn,
+              checkOut: formData.checkOut,
+            }),
+          })
+          
+          const result = await response.json()
+          
+          if (response.ok && result.data?.available) {
+            setAvailabilityStatus('available')
+          } else {
+            setAvailabilityStatus('unavailable')
+            if (result.message) {
+              setErrors(prev => ({ ...prev, availability: result.message }))
+            }
+          }
+        } catch (error) {
+          console.error('Failed to check availability:', error)
+          setAvailabilityStatus('unchecked')
+        } finally {
+          setIsCheckingAvailability(false)
+        }
+      }
+    }
+
+    // Debounce the availability check
+    const timeoutId = setTimeout(checkAvailability, 500)
+    return () => clearTimeout(timeoutId)
+  }, [formData.apartmentId, formData.checkIn, formData.checkOut, isOpen])
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -202,34 +253,63 @@ export function QuickAddModal({
           </div>
 
           {/* Date Range */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="checkIn">Check-in *</Label>
-              <Input
-                id="checkIn"
-                type="date"
-                value={formData.checkIn}
-                onChange={(e) => handleInputChange('checkIn', e.target.value)}
-                className={cn(errors.checkIn && 'border-destructive')}
-              />
-              {errors.checkIn && (
-                <p className="text-sm text-destructive">{errors.checkIn}</p>
-              )}
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="checkIn">Check-in *</Label>
+                <Input
+                  id="checkIn"
+                  type="date"
+                  value={formData.checkIn}
+                  onChange={(e) => handleInputChange('checkIn', e.target.value)}
+                  className={cn(errors.checkIn && 'border-destructive')}
+                />
+                {errors.checkIn && (
+                  <p className="text-sm text-destructive">{errors.checkIn}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="checkOut">Check-out *</Label>
+                <Input
+                  id="checkOut"
+                  type="date"
+                  value={formData.checkOut}
+                  onChange={(e) => handleInputChange('checkOut', e.target.value)}
+                  className={cn(errors.checkOut && 'border-destructive')}
+                />
+                {errors.checkOut && (
+                  <p className="text-sm text-destructive">{errors.checkOut}</p>
+                )}
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="checkOut">Check-out *</Label>
-              <Input
-                id="checkOut"
-                type="date"
-                value={formData.checkOut}
-                onChange={(e) => handleInputChange('checkOut', e.target.value)}
-                className={cn(errors.checkOut && 'border-destructive')}
-              />
-              {errors.checkOut && (
-                <p className="text-sm text-destructive">{errors.checkOut}</p>
-              )}
-            </div>
+            {/* Availability Status Indicator */}
+            {formData.apartmentId && formData.checkIn && formData.checkOut && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-md">
+                {availabilityStatus === 'checking' && (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Checking availability...</span>
+                  </>
+                )}
+                {availabilityStatus === 'available' && (
+                  <>
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-sm text-green-600">Dates are available!</span>
+                  </>
+                )}
+                {availabilityStatus === 'unavailable' && (
+                  <>
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <span className="text-sm text-destructive">Dates are not available</span>
+                  </>
+                )}
+              </div>
+            )}
+            {errors.availability && (
+              <p className="text-sm text-destructive">{errors.availability}</p>
+            )}
           </div>
 
           {/* Guest Information */}
@@ -289,25 +369,64 @@ export function QuickAddModal({
             </Select>
           </div>
 
-          {/* Total Price */}
-          <div className="space-y-2">
-            <Label htmlFor="totalPrice">Total Price</Label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="totalPrice"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.totalPrice || ''}
-                onChange={(e) => handleInputChange('totalPrice', parseFloat(e.target.value) || 0)}
-                className={cn('pl-10', errors.totalPrice && 'border-destructive')}
-              />
+          {/* Pricing */}
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="totalPrice">Total Price *</Label>
+              <div className="relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="totalPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={formData.totalPrice || ''}
+                  onChange={(e) => handleInputChange('totalPrice', parseFloat(e.target.value) || 0)}
+                  className={cn('pl-10', errors.totalPrice && 'border-destructive')}
+                />
+              </div>
+              {errors.totalPrice && (
+                <p className="text-sm text-destructive">{errors.totalPrice}</p>
+              )}
             </div>
-            {errors.totalPrice && (
-              <p className="text-sm text-destructive">{errors.totalPrice}</p>
-            )}
+
+            {/* Additional Fees (Optional) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="cleaningFee" className="text-sm text-muted-foreground">Cleaning Fee</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    id="cleaningFee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.cleaningFee || ''}
+                    onChange={(e) => handleInputChange('cleaningFee', parseFloat(e.target.value) || 0)}
+                    className="pl-8 h-9 text-sm"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="platformFee" className="text-sm text-muted-foreground">Platform Fee</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    id="platformFee"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.platformFee || ''}
+                    onChange={(e) => handleInputChange('platformFee', parseFloat(e.target.value) || 0)}
+                    className="pl-8 h-9 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Notes */}

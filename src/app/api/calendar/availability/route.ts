@@ -138,20 +138,29 @@ export async function GET(request: NextRequest) {
 
     console.log('Availability API - Result:', JSON.stringify(result, null, 2))
 
-    return createSuccessResponse(result, 'Availability checked successfully')
+    return NextResponse.json(createSuccessResponse(result, 'Availability checked successfully'))
 
   } catch (error) {
     console.error('Availability API - Error:', error)
 
     if (error instanceof AppError) {
-      return createErrorResponse(error.message, error.statusCode)
+      return NextResponse.json(
+        createErrorResponse(error.message, error.statusCode),
+        { status: error.statusCode }
+      )
     }
 
     if (error instanceof Error && error.name === 'ZodError') {
-      return createErrorResponse('Invalid query parameters', 400)
+      return NextResponse.json(
+        createErrorResponse('Invalid query parameters', 400),
+        { status: 400 }
+      )
     }
 
-    return createErrorResponse('Failed to check availability', 500)
+    return NextResponse.json(
+      createErrorResponse('Failed to check availability', 500),
+      { status: 500 }
+    )
   }
 }
 
@@ -285,20 +294,29 @@ export async function POST(request: NextRequest) {
 
     console.log('Availability API POST - Results:', JSON.stringify(responseData, null, 2))
 
-    return createSuccessResponse(responseData, 'Availability checks completed')
+    return NextResponse.json(createSuccessResponse(responseData, 'Availability checks completed'))
 
   } catch (error) {
     console.error('Availability API POST - Error:', error)
 
     if (error instanceof AppError) {
-      return createErrorResponse(error.message, error.statusCode)
+      return NextResponse.json(
+        createErrorResponse(error.message, error.statusCode),
+        { status: error.statusCode }
+      )
     }
 
     if (error instanceof Error && error.name === 'ZodError') {
-      return createErrorResponse('Invalid request body', 400)
+      return NextResponse.json(
+        createErrorResponse('Invalid request body', 400),
+        { status: 400 }
+      )
     }
 
-    return createErrorResponse('Failed to check availability', 500)
+    return NextResponse.json(
+      createErrorResponse('Failed to check availability', 500),
+      { status: 500 }
+    )
   }
 }
 

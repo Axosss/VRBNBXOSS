@@ -116,6 +116,8 @@ export interface QuickReservation {
   guestCount: number
   platform: 'airbnb' | 'vrbo' | 'direct' | 'booking_com'
   totalPrice: number
+  cleaningFee?: number
+  platformFee?: number
   notes?: string
 }
 

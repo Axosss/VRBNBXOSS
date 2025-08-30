@@ -19,6 +19,8 @@ import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ReservationCard } from '@/components/reservations/reservation-card'
 import { ReservationStatusBadge } from '@/components/reservations/reservation-status-badge'
+import { QuickAddModal } from '@/components/calendar/quick-add-modal'
+import type { QuickReservation } from '@/types/calendar'
 
 export default function ReservationsPage() {
   const router = useRouter()
@@ -30,6 +32,7 @@ export default function ReservationsPage() {
   const [sortBy, setSortBy] = useState<string>('created_at')
   const [sortOrder, setSortOrder] = useState<string>('desc')
   const [currentPage, setCurrentPage] = useState<number>(1)
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
   
   const { 
     reservations,
@@ -104,7 +107,38 @@ export default function ReservationsPage() {
   }
 
   const handleCreateReservation = () => {
-    router.push('/dashboard/reservations/new')
+    setIsQuickAddOpen(true)
+  }
+
+  const handleQuickAdd = async (quickReservation: QuickReservation) => {
+    try {
+      const response = await fetch('/api/calendar/quick-add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quickReservation),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to create reservation')
+      }
+
+      const result = await response.json()
+      
+      // Refresh the reservations list
+      fetchReservations({ page: currentPage, limit: 100 })
+      
+      // Close the modal
+      setIsQuickAddOpen(false)
+      
+      // Navigate to the new reservation
+      if (result.data?.id) {
+        router.push(`/dashboard/reservations/${result.data.id}`)
+      }
+    } catch (error) {
+      console.error('Failed to create reservation:', error)
+      throw error
+    }
   }
 
   const handleDeleteReservation = async (reservation: Reservation) => {
@@ -392,6 +426,14 @@ export default function ReservationsPage() {
           </div>
         </div>
       )}
+
+      {/* Quick Add Modal */}
+      <QuickAddModal
+        isOpen={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        onSubmit={handleQuickAdd}
+        apartments={apartments.map(apt => ({ id: apt.id, name: apt.name }))}
+      />
     </div>
   )
 }

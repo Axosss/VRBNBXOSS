@@ -58,7 +58,9 @@ export function ReservationCard({
               <div className="flex items-start justify-between mb-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="font-semibold text-foreground truncate">
-                    {reservation.guest?.name || 'Guest'}
+                    {reservation.guest?.name || 
+                     (reservation.contactInfo as any)?.name || 
+                     'Guest'}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin className="h-3 w-3 flex-shrink-0" />
@@ -149,7 +151,9 @@ export function ReservationCard({
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
             <CardTitle className="truncate text-base">
-              {reservation.guest?.name || 'Guest'}
+              {reservation.guest?.name || 
+               (reservation.contactInfo as any)?.name || 
+               'Guest'}
             </CardTitle>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="h-3 w-3 flex-shrink-0" />
