@@ -1,12 +1,9 @@
 # CLAUDE.md
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-
 ## Git Commit Guidelines
 - Please use Conventional Commits formatting for git commits.
 - Please use Conventional Branch naming (prefix-based branch naming convention)
 - Please do not mention yourself (Claude) as a co-author when committing, or include any links to Claude Code
-
 ## Visual Development Memories
 - Please use the playwright MCP server when making visual changes to the front-end to check your work
 ## Guidance Memories

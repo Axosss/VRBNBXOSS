@@ -397,9 +397,22 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
           {/* Guest Information */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Guest Information
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Guest Information
+                </span>
+                {selectedReservation.guest?.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push(`/dashboard/guests/${selectedReservation.guest.id}`)}
+                    className="gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Guest Profile
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
