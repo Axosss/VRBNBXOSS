@@ -302,11 +302,14 @@ export default function StatisticsPage() {
                   dataKey="month" 
                   className="text-xs"
                   tick={{ fill: 'currentColor' }}
+                  angle={statistics.monthlyData.length > 15 ? -45 : 0}
+                  textAnchor={statistics.monthlyData.length > 15 ? "end" : "middle"}
+                  height={statistics.monthlyData.length > 15 ? 60 : 30}
                 />
                 <YAxis 
                   className="text-xs"
                   tick={{ fill: 'currentColor' }}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
                 />
                 <Tooltip 
                   formatter={(value: number) => formatCurrency(value)}
@@ -321,7 +324,7 @@ export default function StatisticsPage() {
                   dataKey="revenue" 
                   stroke="hsl(var(--primary))"
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                  dot={{ fill: 'hsl(var(--primary))', r: statistics.monthlyData.length > 20 ? 2 : 4 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>

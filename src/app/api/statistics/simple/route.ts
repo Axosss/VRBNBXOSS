@@ -175,87 +175,139 @@ export async function GET(request: NextRequest) {
         }, 0),
       }
 
-      // Get monthly data for chart (current year, January to December)
-      const currentYear = new Date().getFullYear()
+      // Get period-specific data for chart based on selected date range
+      const startDateObj = new Date(startDate)
+      const endDateObj = new Date(endDate)
+      const daysDiff = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24))
+      
       const monthlyData = []
       
-      for (let month = 0; month < 12; month++) {
-        const monthStart = format(new Date(currentYear, month, 1), 'yyyy-MM-dd')
-        const monthEnd = format(endOfMonth(new Date(currentYear, month, 1)), 'yyyy-MM-dd')
-        
-        // Find reservations that overlap with this month
-        let monthQuery = supabase
-          .from('reservations')
-          .select('total_price, cleaning_fee, platform_fee, status, check_in, check_out')
-          .eq('owner_id', user.id)
-          .lte('check_in', monthEnd)    // Starts before or during the month
-          .gte('check_out', monthStart)  // Ends after or during the month
-
-        if (query.apartmentId) {
-          monthQuery = monthQuery.eq('apartment_id', query.apartmentId)
+      // Determine granularity based on period length
+      if (daysDiff <= 31) {
+        // Daily granularity for 1 month or less
+        for (let d = 0; d <= daysDiff; d++) {
+          const currentDate = new Date(startDateObj)
+          currentDate.setDate(currentDate.getDate() + d)
+          const dayStart = format(currentDate, 'yyyy-MM-dd')
+          const dayEnd = format(currentDate, 'yyyy-MM-dd')
+          
+          // Find reservations that overlap with this day
+          let dayQuery = supabase
+            .from('reservations')
+            .select('total_price, cleaning_fee, platform_fee, status, check_in, check_out')
+            .eq('owner_id', user.id)
+            .lte('check_in', dayEnd)
+            .gte('check_out', dayStart)
+          
+          if (query.apartmentId) {
+            dayQuery = dayQuery.eq('apartment_id', query.apartmentId)
+          }
+          
+          const { data: dayReservations } = await dayQuery
+          
+          const activeDayReservations = dayReservations?.filter(
+            r => r.status !== 'cancelled' && r.status !== 'draft'
+          ) || []
+          
+          // Calculate prorated revenue for this day
+          const dayRevenue = activeDayReservations.reduce((sum, r) => {
+            const checkIn = new Date(r.check_in)
+            const checkOut = new Date(r.check_out)
+            const totalDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) + 1
+            const dailyRate = (Number(r.total_price) || 0) / totalDays
+            return sum + dailyRate
+          }, 0)
+          
+          monthlyData.push({
+            month: format(currentDate, 'MMM dd'),
+            revenue: dayRevenue
+          })
         }
-
-        const { data: monthReservations } = await monthQuery
+      } else {
+        // Monthly granularity for longer periods
+        let currentDate = new Date(startDateObj)
+        currentDate.setDate(1) // Start from the beginning of the month
         
-        const activeMonthReservations = monthReservations?.filter(
-          r => r.status !== 'cancelled' && r.status !== 'draft'
-        ) || []
-        
-        // Calculate prorated revenue for this month
-        const monthRevenue = activeMonthReservations.reduce((sum, r) => {
-          const checkIn = new Date(r.check_in)
-          const checkOut = new Date(r.check_out)
-          const monthStartDate = new Date(monthStart)
-          const monthEndDate = new Date(monthEnd)
+        while (currentDate <= endDateObj) {
+          const monthStart = format(startOfMonth(currentDate), 'yyyy-MM-dd')
+          const monthEnd = format(endOfMonth(currentDate), 'yyyy-MM-dd')
           
-          // Calculate total days of the reservation
-          const totalDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          // Don't go beyond the selected period
+          const effectiveStart = monthStart < startDate ? startDate : monthStart
+          const effectiveEnd = monthEnd > endDate ? endDate : monthEnd
           
-          // Check if this is a long-term rental (> 30 days)
-          const isLongTermRental = totalDays > 30
+          // Find reservations that overlap with this month
+          let monthQuery = supabase
+            .from('reservations')
+            .select('total_price, cleaning_fee, platform_fee, status, check_in, check_out')
+            .eq('owner_id', user.id)
+            .lte('check_in', effectiveEnd)
+            .gte('check_out', effectiveStart)
           
-          let proratedAmount = 0
+          if (query.apartmentId) {
+            monthQuery = monthQuery.eq('apartment_id', query.apartmentId)
+          }
           
-          if (isLongTermRental) {
-            // For long-term rentals, use fixed monthly rent calculation
+          const { data: monthReservations } = await monthQuery
+          
+          const activeMonthReservations = monthReservations?.filter(
+            r => r.status !== 'cancelled' && r.status !== 'draft'
+          ) || []
+          
+          // Calculate prorated revenue for this month
+          const monthRevenue = activeMonthReservations.reduce((sum, r) => {
+            const checkIn = new Date(r.check_in)
+            const checkOut = new Date(r.check_out)
+            const monthStartDate = new Date(effectiveStart)
+            const monthEndDate = new Date(effectiveEnd)
             
-            // Calculate the number of full months in the reservation
-            const totalMonths = Math.max(1, Math.round(totalDays / 30))
-            const monthlyRent = (Number(r.total_price) || 0) / totalMonths
+            // Calculate total days of the reservation
+            const totalDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) + 1
             
-            // Check if current month is fully within the reservation period
-            const isFullMonth = checkIn <= monthStartDate && checkOut >= monthEndDate
+            // Check if this is a long-term rental (> 30 days)
+            const isLongTermRental = totalDays > 30
             
-            if (isFullMonth) {
-              // Full month = full monthly rent
-              proratedAmount = monthlyRent
+            let proratedAmount = 0
+            
+            if (isLongTermRental) {
+              // For long-term rentals, use fixed monthly rent calculation
+              const totalMonths = Math.max(1, Math.round(totalDays / 30))
+              const monthlyRent = (Number(r.total_price) || 0) / totalMonths
+              
+              // Check if current month is fully within the reservation period
+              const isFullMonth = checkIn <= monthStartDate && checkOut >= monthEndDate
+              
+              if (isFullMonth) {
+                proratedAmount = monthlyRent
+              } else {
+                // Partial month - calculate based on days occupied
+                const overlapStart = checkIn > monthStartDate ? checkIn : monthStartDate
+                const overlapEnd = checkOut < monthEndDate ? checkOut : monthEndDate
+                const overlapDays = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                const daysInMonth = new Date(monthEndDate.getFullYear(), monthEndDate.getMonth() + 1, 0).getDate()
+                
+                proratedAmount = (monthlyRent / daysInMonth) * overlapDays
+              }
             } else {
-              // Partial month - calculate based on days occupied
+              // For short-term rentals, use the original daily rate calculation
               const overlapStart = checkIn > monthStartDate ? checkIn : monthStartDate
               const overlapEnd = checkOut < monthEndDate ? checkOut : monthEndDate
               const overlapDays = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-              const daysInMonth = new Date(monthEndDate.getFullYear(), monthEndDate.getMonth() + 1, 0).getDate()
               
-              // Prorate monthly rent based on days occupied in this month
-              proratedAmount = (monthlyRent / daysInMonth) * overlapDays
+              proratedAmount = totalDays > 0 ? (Number(r.total_price) || 0) * (overlapDays / totalDays) : 0
             }
-          } else {
-            // For short-term rentals, use the original daily rate calculation
-            const overlapStart = checkIn > monthStartDate ? checkIn : monthStartDate
-            const overlapEnd = checkOut < monthEndDate ? checkOut : monthEndDate
-            const overlapDays = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
             
-            // Prorate based on daily rate
-            proratedAmount = totalDays > 0 ? (Number(r.total_price) || 0) * (overlapDays / totalDays) : 0
-          }
+            return sum + proratedAmount
+          }, 0)
           
-          return sum + proratedAmount
-        }, 0)
-        
-        monthlyData.push({
-          month: format(new Date(currentYear, month, 1), 'MMM'),
-          revenue: monthRevenue
-        })
+          monthlyData.push({
+            month: format(currentDate, 'MMM'),
+            revenue: monthRevenue
+          })
+          
+          // Move to next month
+          currentDate.setMonth(currentDate.getMonth() + 1)
+        }
       }
 
       return NextResponse.json({
