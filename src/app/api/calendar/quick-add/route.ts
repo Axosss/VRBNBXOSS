@@ -56,13 +56,9 @@ export async function POST(request: NextRequest) {
     // Check if dates are valid
     const checkInDate = new Date(quickReservation.checkIn)
     const checkOutDate = new Date(quickReservation.checkOut)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    if (checkInDate < today) {
-      throw new AppError('Check-in date cannot be in the past', 400)
-    }
-
+    
+    // Allow past dates for historical data and testing
+    // Only validate that check-out is after check-in
     if (checkOutDate <= checkInDate) {
       throw new AppError('Check-out date must be after check-in date', 400)
     }

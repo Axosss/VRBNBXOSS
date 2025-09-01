@@ -18,6 +18,14 @@ const statusConfig = {
     label: 'Confirmed',
     className: 'bg-green-100 text-green-800 border-green-200',
   },
+  in_progress: {
+    label: 'In Progress',
+    className: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  },
+  completed: {
+    label: 'Completed',
+    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  },
   checked_in: {
     label: 'Checked In',
     className: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -37,7 +45,10 @@ const statusConfig = {
 }
 
 export function ReservationStatusBadge({ status, className = '' }: ReservationStatusBadgeProps) {
-  const config = statusConfig[status]
+  const config = statusConfig[status] || {
+    label: status || 'Unknown',
+    className: 'bg-gray-100 text-gray-800 border-gray-200',
+  }
   
   return (
     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${config.className} ${className}`}>

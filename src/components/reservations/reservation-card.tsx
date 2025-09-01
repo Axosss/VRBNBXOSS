@@ -91,6 +91,11 @@ export function ReservationCard({
                 <div className="flex items-center gap-1">
                   <DollarSign className="h-3 w-3" />
                   <span>{formatCurrency(reservation.totalPrice, reservation.currency)}</span>
+                  {(reservation.cleaningFee || reservation.platformFee) && (
+                    <span className="text-xs text-muted-foreground">
+                      (+{formatCurrency((reservation.cleaningFee || 0) + (reservation.platformFee || 0), reservation.currency)} fees)
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -191,11 +196,27 @@ export function ReservationCard({
             <span className="font-medium">{reservation.guestCount}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Total</span>
+            <span className="text-muted-foreground">Price</span>
             <span className="font-semibold text-foreground">
               {formatCurrency(reservation.totalPrice, reservation.currency)}
             </span>
           </div>
+          {reservation.cleaningFee > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Cleaning fee</span>
+              <span className="text-muted-foreground">
+                {formatCurrency(reservation.cleaningFee, reservation.currency)}
+              </span>
+            </div>
+          )}
+          {reservation.platformFee > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Platform fee</span>
+              <span className="text-muted-foreground">
+                {formatCurrency(reservation.platformFee, reservation.currency)}
+              </span>
+            </div>
+          )}
 
           {reservation.notes && (
             <div className="pt-2 border-t">

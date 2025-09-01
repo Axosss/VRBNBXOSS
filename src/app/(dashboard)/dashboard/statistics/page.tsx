@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TrendingUp, Users, DollarSign, Calendar, Home, BarChart3 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { format, subMonths } from 'date-fns'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { format, subMonths, startOfYear, endOfYear } from 'date-fns'
 
 interface Statistics {
   occupancyRate: number
@@ -13,10 +13,7 @@ interface Statistics {
   averageRevenue: number
   totalRevenue: number
   totalReservations: number
-  monthlyData: Array<{
-    month: string
-    revenue: number
-  }>
+  monthlyData: any // Can be array or object with chartType
   platformBreakdown?: {
     airbnb: number
     vrbo: number
@@ -59,7 +56,7 @@ export default function StatisticsPage() {
       setLoading(true)
       try {
         // Calculate date range
-        const endDate = format(new Date(), 'yyyy-MM-dd')
+        let endDate = format(new Date(), 'yyyy-MM-dd')
         let startDate = format(subMonths(new Date(), 3), 'yyyy-MM-dd')
         
         if (dateRange === '1month') {
@@ -68,6 +65,13 @@ export default function StatisticsPage() {
           startDate = format(subMonths(new Date(), 6), 'yyyy-MM-dd')
         } else if (dateRange === '1year') {
           startDate = format(subMonths(new Date(), 12), 'yyyy-MM-dd')
+        } else if (dateRange === 'yeartodate') {
+          // From January 1st of current year to today
+          startDate = format(startOfYear(new Date()), 'yyyy-MM-dd')
+        } else if (dateRange === 'currentyear') {
+          // Full current year (January to December)
+          startDate = format(startOfYear(new Date()), 'yyyy-MM-dd')
+          endDate = format(endOfYear(new Date()), 'yyyy-MM-dd')
         }
 
         // Build query params
@@ -162,7 +166,9 @@ export default function StatisticsPage() {
             <SelectItem value="1month">Last month</SelectItem>
             <SelectItem value="3months">Last 3 months</SelectItem>
             <SelectItem value="6months">Last 6 months</SelectItem>
-            <SelectItem value="1year">Last year</SelectItem>
+            <SelectItem value="yeartodate">Year to date</SelectItem>
+            <SelectItem value="1year">Last 12 months</SelectItem>
+            <SelectItem value="currentyear">Current year (Jan-Dec)</SelectItem>
           </SelectContent>
         </Select>
 
@@ -294,50 +300,102 @@ export default function StatisticsPage() {
             </div>
           </div>
           
-          {statistics?.monthlyData && statistics.monthlyData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={statistics.monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="month" 
-                  className="text-xs"
-                  tick={{ fill: 'currentColor' }}
-                  angle={statistics.monthlyData.length > 15 ? -45 : 0}
-                  textAnchor={statistics.monthlyData.length > 15 ? "end" : "middle"}
-                  height={statistics.monthlyData.length > 15 ? 60 : 30}
-                />
-                <YAxis 
-                  className="text-xs"
-                  tick={{ fill: 'currentColor' }}
-                  tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
-                />
-                <Tooltip 
-                  formatter={(value: number) => formatCurrency(value)}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))', r: statistics.monthlyData.length > 20 ? 2 : 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-              <div className="text-center space-y-2">
-                <Home className="h-12 w-12 mx-auto opacity-50" />
-                <p>No revenue data available</p>
-                <p className="text-sm">Start adding reservations to see trends</p>
-              </div>
-            </div>
-          )}
+          {(() => {
+            if (!statistics?.monthlyData) return null;
+            
+            if (statistics.monthlyData.chartType === 'multi-apartment' && statistics.monthlyData.data?.length > 0) {
+              // Bar chart for multiple apartments
+              return (
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={statistics.monthlyData.data}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="period" 
+                    className="text-xs"
+                    tick={{ fill: 'currentColor' }}
+                    angle={statistics.monthlyData.data.length > 15 ? -45 : 0}
+                    textAnchor={statistics.monthlyData.data.length > 15 ? "end" : "middle"}
+                    height={statistics.monthlyData.data.length > 15 ? 60 : 30}
+                  />
+                  <YAxis 
+                    className="text-xs"
+                    tick={{ fill: 'currentColor' }}
+                    tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    iconType="rect"
+                  />
+                  {statistics.monthlyData.apartments?.map((apt: Apartment, index: number) => (
+                    <Bar 
+                      key={apt.id}
+                      dataKey={apt.id}
+                      name={apt.name}
+                      fill={index === 0 ? '#3b82f6' : '#10b981'} // Blue for first, green for second
+                      radius={[4, 4, 0, 0]}
+                    />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+              );
+            } else if (Array.isArray(statistics.monthlyData) && statistics.monthlyData.length > 0) {
+              // Line chart for single apartment
+              return (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={statistics.monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="month" 
+                    className="text-xs"
+                    tick={{ fill: 'currentColor' }}
+                    angle={statistics.monthlyData.length > 15 ? -45 : 0}
+                    textAnchor={statistics.monthlyData.length > 15 ? "end" : "middle"}
+                    height={statistics.monthlyData.length > 15 ? 60 : 30}
+                  />
+                  <YAxis 
+                    className="text-xs"
+                    tick={{ fill: 'currentColor' }}
+                    tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => formatCurrency(value)}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--primary))', r: statistics.monthlyData.length > 20 ? 2 : 4 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+              );
+            } else {
+              return (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center space-y-2">
+                    <Home className="h-12 w-12 mx-auto opacity-50" />
+                    <p>No revenue data available</p>
+                    <p className="text-sm">Start adding reservations to see trends</p>
+                  </div>
+                </div>
+              );
+            }
+          })()}
         </div>
       </Card>
     </div>
