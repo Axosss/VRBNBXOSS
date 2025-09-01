@@ -135,7 +135,10 @@ export async function GET(request: NextRequest) {
       const occupiedNights = activeReservations.reduce((sum, r) => {
         const checkIn = new Date(r.check_in)
         const checkOut = new Date(r.check_out)
-        const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
+        // Only count nights within the period
+        const overlapStart = checkIn > periodStart ? checkIn : periodStart
+        const overlapEnd = checkOut < periodEnd ? checkOut : periodEnd
+        const nights = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)))
         return sum + nights
       }, 0)
 
