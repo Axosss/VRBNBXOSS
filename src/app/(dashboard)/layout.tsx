@@ -19,8 +19,9 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth-store'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { ProtectedRoute } from '@/components/auth/protected-route'
+import { NavigationLink } from '@/components/navigation/navigation-link'
 import { cn } from '@/lib/utils'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -44,7 +45,6 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
-  const pathname = usePathname()
   const { user, signOut, isLoading } = useAuthStore()
 
   const handleSignOut = async () => {
@@ -87,25 +87,15 @@ export default function DashboardLayout({
           </div>
 
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href || 
-                (item.href !== '/dashboard' && pathname.startsWith(item.href))
-              
-              return (
-                <Button
-                  key={item.name}
-                  variant={isActive ? 'secondary' : 'ghost'}
-                  className="w-full justify-start"
-                  onClick={() => {
-                    router.push(item.href)
-                    setSidebarOpen(false)
-                  }}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Button>
-              )
-            })}
+            {navigation.map((item) => (
+              <NavigationLink
+                key={item.name}
+                href={item.href}
+                name={item.name}
+                icon={item.icon}
+                onClick={() => setSidebarOpen(false)}
+              />
+            ))}
           </nav>
 
           {/* User menu */}
