@@ -302,13 +302,7 @@ export function CleaningCard({
           )
         ) : null}
 
-        {/* Urgency indicator for overdue items */}
-        {cleaning.status === 'needed' && new Date(cleaning.scheduledStart) < new Date() && (
-          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
-            <AlertCircle className="h-4 w-4" />
-            <span className="font-medium">Overdue - needs immediate attention</span>
-          </div>
-        )}
+        {/* No urgency indicators - cleanings are purely informational */}
       </CardContent>
     </Card>
   )

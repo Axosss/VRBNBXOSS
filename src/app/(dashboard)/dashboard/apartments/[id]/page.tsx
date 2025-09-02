@@ -24,12 +24,16 @@ import {
   Check,
   Settings,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Map,
+  Upload,
+  X
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useApartmentStore } from '@/lib/stores/apartment-store'
 import { PhotoManager } from '@/components/apartments/photo-manager'
+import { FloorPlanManager } from '@/components/apartments/floor-plan-manager'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { cn } from '@/lib/utils'
 
@@ -42,14 +46,18 @@ export default function ApartmentDetailPage() {
     selectedApartment,
     fetchApartment,
     deleteApartment,
+    uploadFloorPlan,
+    deleteFloorPlan,
     isLoading,
     isDeleting,
+    isUploadingPhotos,
     error,
   } = useApartmentStore()
 
   const [showAccessCodes, setShowAccessCodes] = useState(false)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false)
 
   useEffect(() => {
     if (apartmentId) {
@@ -80,6 +88,7 @@ export default function ApartmentDetailPage() {
     }
   }
 
+
   const getAmenityIcon = (amenityId: string) => {
     const icons: Record<string, any> = {
       'WiFi': Wifi,
@@ -94,7 +103,7 @@ export default function ApartmentDetailPage() {
     return icons[amenityId] || Settings
   }
 
-  const statusColors = {
+  const statusColors: Record<string, { bg: string; text: string; border: string }> = {
     active: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
     maintenance: { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-200' },
     inactive: { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-200' },
@@ -153,7 +162,8 @@ export default function ApartmentDetailPage() {
   }
 
   const apartment = selectedApartment
-  const statusColor = statusColors[apartment.status]
+  const status = apartment.status || 'inactive'
+  const statusColor = statusColors[status] || statusColors.inactive
 
   return (
     <div className="space-y-6">
@@ -178,13 +188,17 @@ export default function ApartmentDetailPage() {
                 statusColor.text,
                 statusColor.border
               )}>
-                {apartment.status.charAt(0).toUpperCase() + apartment.status.slice(1)}
+                {status.charAt(0).toUpperCase() + status.slice(1)}
               </div>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <MapPin className="h-4 w-4" />
               <span>
-                {apartment.address.street}, {apartment.address.city}, {apartment.address.state} {apartment.address.zipCode}
+                {apartment.address ? (
+                  `${apartment.address.street}, ${apartment.address.city}, ${apartment.address.state} ${apartment.address.zipCode}`
+                ) : (
+                  'Address not available'
+                )}
               </span>
             </div>
           </div>
@@ -248,7 +262,7 @@ export default function ApartmentDetailPage() {
                   <Calendar className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>
-                    <p className="font-semibold capitalize">{apartment.status}</p>
+                    <p className="font-semibold capitalize">{status}</p>
                   </div>
                 </div>
               </div>
@@ -280,6 +294,19 @@ export default function ApartmentDetailPage() {
             </CardHeader>
             <CardContent>
               <PhotoManager apartment={apartment} />
+            </CardContent>
+          </Card>
+
+          {/* Floor Plan */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Map className="h-5 w-5" />
+                Floor Plan
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FloorPlanManager apartment={apartment} />
             </CardContent>
           </Card>
         </div>

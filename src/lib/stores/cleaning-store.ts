@@ -164,7 +164,11 @@ export const useCleaningStore = create<CleaningState>()(
           
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create cleaning');
+            // Pass the status code in the error message for better handling
+            const errorMessage = errorData.error || errorData.message || 'Failed to create cleaning';
+            const error = new Error(errorMessage);
+            (error as any).statusCode = response.status;
+            throw error;
           }
           
           const data = await response.json();

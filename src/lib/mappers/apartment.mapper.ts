@@ -28,14 +28,20 @@ export function mapApartmentFromDB(db: ApartmentDB): Apartment {
     amenities: db.amenities || [],
     
     // Photos - IMPORTANT: DB stores strings, frontend expects objects
-    photos: (db.photos || []).map((url, index) => ({
-      id: `photo-${index}`,
-      url: url,
-      filename: url.split('/').pop() || 'photo.jpg',
-      size: 0, // Unknown from DB
-      isMain: index === 0,
-      order: index
-    })),
+    photos: (db.photos || []).map((url, index) => {
+      // Extract filename from URL, handling both old and new formats
+      const urlParts = url.split('/')
+      const filename = urlParts[urlParts.length - 1] || 'photo.jpg'
+      
+      return {
+        id: `photo-${index}`,
+        url: url,
+        filename: filename,
+        size: 0, // Unknown from DB
+        isMain: index === 0,
+        order: index
+      }
+    }),
     
     // Access codes - now in camelCase structure
     accessCodes: db.access_codes ? {
@@ -47,6 +53,7 @@ export function mapApartmentFromDB(db: ApartmentDB): Apartment {
     
     status: db.status,
     notes: db.notes || undefined,
+    floorPlan: db.floor_plan || undefined,
     
     // Timestamps - now in camelCase
     createdAt: db.created_at,
@@ -87,6 +94,7 @@ export function mapApartmentToDB(app: Partial<Apartment>): Partial<ApartmentDB> 
   
   if (app.status !== undefined) result.status = app.status
   if (app.notes !== undefined) result.notes = app.notes
+  if (app.floorPlan !== undefined) result.floor_plan = app.floorPlan
   
   // Don't send timestamps to DB (they're auto-managed)
   

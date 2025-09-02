@@ -48,6 +48,9 @@ export interface ApartmentDB {
   amenities: string[] // TEXT[] in DB
   photos: string[] // TEXT[] in DB - Note: Frontend expects objects, needs transformation
   access_codes: Record<string, unknown> | null // JSONB in DB
+  floor_plan: string | null // TEXT in DB - URL to floor plan image/PDF
+  square_feet: number | null
+  notes: string | null
   status: 'active' | 'maintenance' | 'inactive'
   created_at: string
   updated_at: string

@@ -330,17 +330,7 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
         </div>
       </div>
 
-      {/* Status Alert */}
-      {isOverdue && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-red-800">
-              <AlertCircle className="h-4 w-4" />
-              <span className="font-medium">This cleaning is overdue and needs immediate attention</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* No status alerts - cleanings are purely informational */}
 
       {/* Main Information */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -198,67 +198,8 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Check for scheduling conflicts with reservations
-    const { data: conflicts, error: conflictError } = await supabase
-      .from('reservations')
-      .select('id')
-      .eq('apartment_id', cleaningData.apartmentId)
-      .neq('status', 'cancelled')
-      .lte('check_in', cleaningData.scheduledEnd)
-      .gte('check_out', cleaningData.scheduledStart)
-      .limit(1);
-    
-    if (conflictError) {
-      console.error('Conflict check error:', conflictError);
-      throw new AppError('Failed to verify availability', 500);
-    }
-    
-    if (conflicts && conflicts.length > 0) {
-      throw new AppError('Cleaning schedule conflicts with existing reservation', 409);
-    }
-    
-    // Check for conflicts with other cleanings on the same time period
-    console.log('Checking for cleaning conflicts:', {
-      apartmentId: cleaningData.apartmentId,
-      scheduledStart: cleaningData.scheduledStart,
-      scheduledEnd: cleaningData.scheduledEnd
-    });
-    
-    const { data: cleaningConflicts, error: cleaningConflictError } = await supabase
-      .from('cleanings')
-      .select('id, scheduled_start, scheduled_end, status')
-      .eq('apartment_id', cleaningData.apartmentId)
-      .neq('status', 'cancelled')
-      .lte('scheduled_start', cleaningData.scheduledEnd)
-      .gte('scheduled_end', cleaningData.scheduledStart);
-    
-    if (cleaningConflictError) {
-      console.error('Cleaning conflict check error:', cleaningConflictError);
-      throw new AppError('Failed to check cleaning conflicts', 500);
-    }
-    
-    console.log('Cleaning conflicts query result:', {
-      count: cleaningConflicts?.length || 0,
-      conflicts: cleaningConflicts
-    });
-    
-    if (cleaningConflicts && cleaningConflicts.length > 0) {
-      const conflict = cleaningConflicts[0];
-      console.log('Cleaning conflict details:', {
-        conflictId: conflict.id,
-        conflictStart: conflict.scheduled_start,
-        conflictEnd: conflict.scheduled_end,
-        conflictStatus: conflict.status,
-        newStart: cleaningData.scheduledStart,
-        newEnd: cleaningData.scheduledEnd
-      });
-      const conflictStart = new Date(conflict.scheduled_start).toLocaleString();
-      const conflictEnd = new Date(conflict.scheduled_end).toLocaleString();
-      throw new AppError(
-        `Another cleaning is already scheduled from ${conflictStart} to ${conflictEnd}`, 
-        409
-      );
-    }
+    // No conflict checking - cleanings are purely informational
+    // Users can create cleanings at any time, even overlapping
     
     // Prepare data for insertion
     const insertData = {

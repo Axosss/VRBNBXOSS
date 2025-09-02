@@ -35,6 +35,7 @@ export interface Apartment {
     isMain: boolean
     order: number
   }>
+  floorPlan?: string
   status: 'active' | 'maintenance' | 'inactive'
   createdAt: string
   updatedAt: string
@@ -317,12 +318,22 @@ export const useApartmentStore = create<ApartmentState>()(
         try {
           set({ error: null })
           
-          const response = await fetch(`/api/apartments/${apartmentId}/photos`, {
+          // Find the photo URL from the current apartment
+          const currentApartment = get().apartments.find(apt => apt.id === apartmentId) || get().selectedApartment
+          const photo = currentApartment?.photos.find(p => p.id === photoId)
+          
+          console.log('Deleting photo:', { photoId, photo, currentApartment })
+          
+          if (!photo) {
+            throw new Error('Photo not found')
+          }
+          
+          // Send URL as query parameter as expected by the API
+          const url = `/api/apartments/${apartmentId}/photos?url=${encodeURIComponent(photo.url)}`
+          console.log('DELETE URL:', url)
+          
+          const response = await fetch(url, {
             method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ photoId }),
           })
           
           const data = await response.json()
@@ -407,6 +418,74 @@ export const useApartmentStore = create<ApartmentState>()(
           }))
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to set main photo'
+          set({ error: errorMessage })
+          throw error
+        }
+      },
+
+      uploadFloorPlan: async (apartmentId: string, file: File) => {
+        try {
+          set({ isUploadingPhotos: true, error: null })
+          
+          const formData = new FormData()
+          formData.append('floor_plan', file)
+          
+          const response = await fetch(`/api/apartments/${apartmentId}/floor-plan`, {
+            method: 'POST',
+            body: formData,
+          })
+          
+          const data = await response.json()
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to upload floor plan')
+          }
+          
+          const updatedApartment = data.data.apartment
+          
+          set(state => ({
+            apartments: state.apartments.map(apt => 
+              apt.id === apartmentId ? updatedApartment : apt
+            ),
+            selectedApartment: state.selectedApartment?.id === apartmentId ? updatedApartment : state.selectedApartment,
+            isUploadingPhotos: false,
+          }))
+          
+          return updatedApartment
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to upload floor plan'
+          set({
+            isUploadingPhotos: false,
+            error: errorMessage,
+          })
+          throw error
+        }
+      },
+
+      deleteFloorPlan: async (apartmentId: string) => {
+        try {
+          set({ error: null })
+          
+          const response = await fetch(`/api/apartments/${apartmentId}/floor-plan`, {
+            method: 'DELETE',
+          })
+          
+          const data = await response.json()
+          
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to delete floor plan')
+          }
+          
+          const updatedApartment = data.data
+          
+          set(state => ({
+            apartments: state.apartments.map(apt => 
+              apt.id === apartmentId ? updatedApartment : apt
+            ),
+            selectedApartment: state.selectedApartment?.id === apartmentId ? updatedApartment : state.selectedApartment,
+          }))
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete floor plan'
           set({ error: errorMessage })
           throw error
         }

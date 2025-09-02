@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { 
   Upload, 
   X, 
@@ -12,7 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useApartmentStore, type Apartment } from '@/lib/stores/apartment-store'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 
@@ -20,10 +20,16 @@ interface PhotoManagerProps {
   apartment: Apartment
 }
 
+interface FilePreview {
+  file: File
+  url: string
+}
+
 export function PhotoManager({ apartment }: PhotoManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [previews, setPreviews] = useState<FilePreview[]>([])
   
   const { 
     uploadPhotos, 
@@ -34,28 +40,71 @@ export function PhotoManager({ apartment }: PhotoManagerProps) {
     error,
   } = useApartmentStore()
 
-  const handleFileSelect = useCallback(async (files: FileList) => {
+  // Clean up preview URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      previews.forEach(preview => URL.revokeObjectURL(preview.url))
+    }
+  }, [previews])
+
+  const handleFileSelect = useCallback((files: FileList) => {
+    const acceptedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    const errors: string[] = []
+    
     const validFiles = Array.from(files).filter(file => {
-      if (!file.type.startsWith('image/')) {
-        setUploadError('Only image files are allowed')
+      // Check file type more precisely
+      if (!acceptedTypes.includes(file.type.toLowerCase())) {
+        errors.push(`${file.name}: Invalid format. Only JPG, PNG, and WebP are allowed`)
         return false
       }
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        setUploadError('File size must be less than 10MB')
+      // Check file size
+      if (file.size > maxSize) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1)
+        errors.push(`${file.name}: File too large (${sizeMB}MB). Maximum is 5MB`)
         return false
       }
       return true
     })
+    
+    if (errors.length > 0) {
+      setUploadError(errors.join('\n'))
+      return
+    }
 
     if (validFiles.length > 0) {
       setUploadError(null)
-      try {
-        await uploadPhotos(apartment.id, validFiles)
-      } catch (err) {
-        setUploadError(err instanceof Error ? err.message : 'Failed to upload photos')
-      }
+      // Generate preview URLs
+      const newPreviews = validFiles.map(file => ({
+        file,
+        url: URL.createObjectURL(file)
+      }))
+      setPreviews(current => [...current, ...newPreviews])
     }
-  }, [apartment.id, uploadPhotos])
+  }, [])
+
+  const handleUploadConfirm = useCallback(async () => {
+    if (previews.length === 0) return
+    
+    try {
+      const files = previews.map(p => p.file)
+      await uploadPhotos(apartment.id, files)
+      // Clear previews after successful upload
+      previews.forEach(preview => URL.revokeObjectURL(preview.url))
+      setPreviews([])
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Failed to upload photos')
+    }
+  }, [apartment.id, uploadPhotos, previews])
+
+  const handleRemovePreview = useCallback((index: number) => {
+    setPreviews(current => {
+      const newPreviews = [...current]
+      URL.revokeObjectURL(newPreviews[index].url)
+      newPreviews.splice(index, 1)
+      return newPreviews
+    })
+  }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -103,8 +152,8 @@ export function PhotoManager({ apartment }: PhotoManagerProps) {
 
   // Sort photos by order, with main photo first
   const sortedPhotos = [...apartment.photos].sort((a, b) => {
-    if (a.is_main) return -1
-    if (b.is_main) return 1
+    if (a.isMain) return -1
+    if (b.isMain) return 1
     return a.order - b.order
   })
 
@@ -114,14 +163,13 @@ export function PhotoManager({ apartment }: PhotoManagerProps) {
       <Card className="border-2 border-dashed">
         <CardContent 
           className={`
-            p-8 text-center transition-colors cursor-pointer
+            p-8 text-center transition-colors
             ${dragOver ? 'border-primary bg-primary/5' : 'border-border'}
             ${isUploadingPhotos ? 'opacity-50 pointer-events-none' : ''}
           `}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
         >
           <input
             ref={fileInputRef}
@@ -139,15 +187,21 @@ export function PhotoManager({ apartment }: PhotoManagerProps) {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Upload className="h-6 w-6 text-primary" />
-              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-2"
+              >
+                <Upload className="h-5 w-5" />
+                Choose Photos
+              </Button>
               <div>
                 <p className="font-medium text-foreground">
-                  Drag and drop photos here, or click to browse
+                  Or drag and drop photos here
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Supports JPG, PNG, WebP up to 10MB each
+                  Supports JPG, PNG, WebP up to 5MB each
                 </p>
               </div>
             </div>
@@ -159,7 +213,7 @@ export function PhotoManager({ apartment }: PhotoManagerProps) {
       {(uploadError || error) && (
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 flex items-center gap-3">
           <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
-          <p className="text-destructive text-sm">{uploadError || error}</p>
+          <p className="text-destructive text-sm whitespace-pre-line">{uploadError || error}</p>
           <Button
             variant="ghost"
             size="sm"
@@ -171,14 +225,82 @@ export function PhotoManager({ apartment }: PhotoManagerProps) {
         </div>
       )}
 
+      {/* Preview Section */}
+      {previews.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <h3 className="font-semibold">Preview ({previews.length} photo{previews.length !== 1 ? 's' : ''})</h3>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  previews.forEach(p => URL.revokeObjectURL(p.url))
+                  setPreviews([])
+                }}
+                disabled={isUploadingPhotos}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleUploadConfirm}
+                disabled={isUploadingPhotos}
+              >
+                {isUploadingPhotos ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload All
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {previews.map((preview, index) => (
+                <div key={`preview-${index}-${preview.file.name}`} className="relative group">
+                  <img
+                    src={preview.url}
+                    alt={preview.file.name}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemovePreview(index)}
+                      className="text-white hover:bg-white/20"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                    {preview.file.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {(preview.file.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Photo Grid */}
       {sortedPhotos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {sortedPhotos.map((photo, index) => (
             <PhotoCard
-              key={photo.id}
+              key={photo.id || `photo-${index}-${photo.url}`}
               photo={photo}
-              isMain={photo.is_main}
+              isMain={photo.isMain}
               onDelete={() => handleDeletePhoto(photo.id)}
               onSetMain={() => handleSetMainPhoto(photo.id)}
             />

@@ -88,8 +88,10 @@ export default function CleaningSchedulePage() {
       await createCleaning(data)
       setShowCreateDialog(false)
       setSelectedDate(null)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create cleaning:', error)
+      // Simple error message - cleanings are informational
+      alert(`Failed to create cleaning: ${error.message || 'Unknown error'}`)
     }
   }
 
