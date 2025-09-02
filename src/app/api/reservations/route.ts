@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
     if (filters.search) {
       // Sanitize search query to prevent injection
       const sanitizedSearch = sanitizeSearchQuery(filters.search)
-      // Use parameterized query with Supabase's built-in escaping
-      query = query.or(`guests.name.ilike.%${sanitizedSearch}%,platform_reservation_id.ilike.%${sanitizedSearch}%,notes.ilike.%${sanitizedSearch}%`)
+      // Search only in direct fields of reservations table (not relations)
+      query = query.or(`platform_reservation_id.ilike.%${sanitizedSearch}%,notes.ilike.%${sanitizedSearch}%`)
     }
     
     if (filters.startDate) {

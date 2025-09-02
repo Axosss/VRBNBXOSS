@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Documentation Memories
 - Please use context to find the relevant, up-to-date documentation when working with 3rd party libraries, packages, frameworks, etc as needed.
 
-## Project Overview
+## Project OverviewOui
 VRBNBXOSS is a comprehensive rental property management dashboard for property owners managing multiple apartments across Airbnb, VRBO, and direct bookings. The system helps track reservations, schedule cleanings, manage guest information, and analyze business performance.
 
 ## Architecture
