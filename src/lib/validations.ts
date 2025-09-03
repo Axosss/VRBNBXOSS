@@ -139,7 +139,7 @@ export const apartmentFilterSchema = z.object({
 })
 
 export const reservationFilterSchema = z.object({
-  status: z.enum(['draft', 'pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'archived']).optional(),
+  status: z.enum(['confirmed', 'cancelled']).optional(),
   platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com']).optional(),
   apartmentId: z.string().uuid().optional(),
   search: z.string().optional(),

@@ -67,8 +67,33 @@ export async function GET(request: NextRequest) {
     if (filters.search) {
       // Sanitize search query to prevent injection
       const sanitizedSearch = sanitizeSearchQuery(filters.search)
-      // Search only in direct fields of reservations table (not relations)
-      query = query.or(`platform_reservation_id.ilike.%${sanitizedSearch}%,notes.ilike.%${sanitizedSearch}%`)
+      
+      // Search across multiple fields including contact_info JSONB
+      // We search in platform_reservation_id, notes, contact_info->name, and guest names
+      
+      // First, find all guest IDs that match the search
+      const { data: matchingGuests } = await supabase
+        .from('guests')
+        .select('id')
+        .ilike('name', `%${sanitizedSearch}%`)
+        .eq('owner_id', user.id)
+      
+      const guestIds = matchingGuests?.map(g => g.id) || []
+      
+      // Build search conditions
+      // Note: PostgREST supports searching in JSONB fields with ->> operator
+      // We search in multiple fields: platform_reservation_id, notes, contact_info name, and guest_id
+      const searchConditions = [
+        `platform_reservation_id.ilike.%${sanitizedSearch}%`,
+        `notes.ilike.%${sanitizedSearch}%`,
+        `contact_info->>name.ilike.%${sanitizedSearch}%`
+      ]
+      
+      if (guestIds.length > 0) {
+        searchConditions.push(`guest_id.in.(${guestIds.join(',')})`)
+      }
+      
+      query = query.or(searchConditions.join(','))
     }
     
     if (filters.startDate) {

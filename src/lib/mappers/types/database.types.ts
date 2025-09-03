@@ -21,7 +21,7 @@ export interface ReservationDB {
   cleaning_fee: number | null
   platform_fee: number | null
   currency: string
-  status: 'draft' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'archived'
+  status: 'confirmed' | 'cancelled'
   notes: string | null
   contact_info: Record<string, unknown> | null
   created_at: string

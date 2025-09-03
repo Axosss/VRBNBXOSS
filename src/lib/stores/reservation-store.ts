@@ -51,7 +51,7 @@ export interface Reservation {
   cleaningFee?: number
   platformFee?: number
   currency: string
-  status: 'draft' | 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'archived'
+  status: 'confirmed' | 'cancelled'
   notes?: string
   contactInfo?: object
   createdAt: string

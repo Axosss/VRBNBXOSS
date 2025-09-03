@@ -167,31 +167,18 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
     
     const { status } = selectedReservation
     
-    switch (status) {
-      case 'draft':
-        return [
-          { label: 'Confirm Reservation', action: () => handleStatusUpdate('confirmed'), variant: 'default' as const }
-        ]
-      case 'pending':
-        return [
-          { label: 'Confirm', action: () => handleStatusUpdate('confirmed'), variant: 'default' as const },
-          { label: 'Cancel', action: () => handleStatusUpdate('cancelled'), variant: 'destructive' as const }
-        ]
-      case 'confirmed':
-        return [
-          { label: 'Check In', action: () => handleStatusUpdate('checked_in'), variant: 'default' as const }
-        ]
-      case 'checked_in':
-        return [
-          { label: 'Check Out', action: () => handleStatusUpdate('checked_out'), variant: 'default' as const }
-        ]
-      case 'checked_out':
-        return [
-          { label: 'Archive', action: () => handleStatusUpdate('archived'), variant: 'outline' as const }
-        ]
-      default:
-        return []
+    // Système simplifié: on peut seulement basculer entre confirmed et cancelled
+    if (status === 'confirmed') {
+      return [
+        { label: 'Annuler la réservation', action: () => handleStatusUpdate('cancelled'), variant: 'destructive' as const }
+      ]
+    } else if (status === 'cancelled') {
+      return [
+        { label: 'Réactiver la réservation', action: () => handleStatusUpdate('confirmed'), variant: 'default' as const }
+      ]
     }
+    
+    return []
   }
 
   if (isLoading) {
