@@ -307,3 +307,108 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
     currency: currency
   }).format(amount)
 }
+
+// Calculate reservation bar positions for month view
+export function calculateReservationPositions(
+  reservations: CalendarReservation[],
+  monthStart: Date,
+  monthEnd: Date
+): Array<{
+  reservation: CalendarReservation
+  position: {
+    row: number
+    startCol: number
+    span: number
+    rowOffset: number
+  }
+}> {
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
+  
+  // Sort reservations by check-in date
+  const sortedReservations = [...reservations]
+    .filter(r => r.checkIn && r.checkOut)
+    .sort((a, b) => {
+      const aStart = parseISO(a.checkIn)
+      const bStart = parseISO(b.checkIn)
+      return aStart.getTime() - bStart.getTime()
+    })
+
+  const positioned: Array<{
+    reservation: CalendarReservation
+    position: { row: number; startCol: number; span: number; rowOffset: number }
+  }> = []
+  
+  // Track occupied slots for overlap prevention
+  const occupiedSlots: Map<string, boolean> = new Map()
+
+  for (const reservation of sortedReservations) {
+    const checkIn = parseISO(reservation.checkIn)
+    const checkOut = parseISO(reservation.checkOut)
+    
+    // Skip if completely outside the visible calendar range
+    if (checkOut <= calendarStart || checkIn > calendarEnd) continue
+    
+    // Calculate the days since calendar start
+    const checkInDays = Math.max(0, Math.floor((checkIn.getTime() - calendarStart.getTime()) / (1000 * 60 * 60 * 24)))
+    const checkOutDays = Math.min(
+      Math.floor((calendarEnd.getTime() - calendarStart.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+      Math.floor((checkOut.getTime() - calendarStart.getTime()) / (1000 * 60 * 60 * 24))
+    )
+    
+    // Process each week the reservation spans
+    let currentDay = checkInDays
+    
+    while (currentDay < checkOutDays) {
+      const weekRow = Math.floor(currentDay / 7) + 1
+      const dayInWeek = currentDay % 7
+      const remainingDaysInWeek = 7 - dayInWeek
+      const daysInThisWeek = Math.min(remainingDaysInWeek, checkOutDays - currentDay)
+      
+      // Find an available row offset for this week
+      let rowOffset = 0
+      let foundSlot = false
+      
+      while (!foundSlot && rowOffset < 5) { // Max 5 reservation rows per week
+        let isAvailable = true
+        
+        // Check if all days in this span are available
+        for (let d = 0; d < daysInThisWeek; d++) {
+          const slotKey = `${weekRow}-${rowOffset}-${dayInWeek + d}`
+          if (occupiedSlots.has(slotKey)) {
+            isAvailable = false
+            break
+          }
+        }
+        
+        if (isAvailable) {
+          // Mark these slots as occupied
+          for (let d = 0; d < daysInThisWeek; d++) {
+            const slotKey = `${weekRow}-${rowOffset}-${dayInWeek + d}`
+            occupiedSlots.set(slotKey, true)
+          }
+          
+          // Add this position
+          positioned.push({
+            reservation,
+            position: {
+              row: weekRow,
+              startCol: dayInWeek + 1, // CSS Grid is 1-indexed
+              span: daysInThisWeek,
+              rowOffset: rowOffset
+            }
+          })
+          
+          foundSlot = true
+        } else {
+          rowOffset++
+        }
+      }
+      
+      // Move to next week
+      currentDay += daysInThisWeek
+    }
+  }
+  
+  return positioned
+}

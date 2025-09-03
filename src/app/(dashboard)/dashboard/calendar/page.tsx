@@ -102,8 +102,9 @@ export default function CalendarPage() {
       startDate: newRange.startDate,
       endDate: newRange.endDate,
       view
+      // Note: includeCleanings is preserved automatically by the setFilters merge logic
     })
-  }, [currentDate, view])
+  }, [currentDate, view]) // Removed filters.includeCleanings to avoid circular dependency
 
   const handleViewChange = (newView: CalendarView) => {
     setView(newView)

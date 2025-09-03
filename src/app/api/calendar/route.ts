@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { calendarFiltersSchema } from '@/lib/validations'
 import { createErrorResponse, createSuccessResponse, AppError } from '@/lib/utils'
-import type { CalendarData, CalendarReservation } from '@/types/calendar'
+import type { CalendarData, CalendarReservation, CalendarCleaning } from '@/types/calendar'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
     // Parse boolean fields
     if (queryParams.includeCleanings) {
       queryParams.includeCleanings = queryParams.includeCleanings === 'true'
+    }
+    
+    // Parse apartmentIds array
+    if (queryParams.apartmentIds && typeof queryParams.apartmentIds === 'string') {
+      queryParams.apartmentIds = queryParams.apartmentIds.split(',')
     }
     
     // Validate query parameters
@@ -27,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Fetch reservations directly - use left join for apartments to avoid RLS recursion
-    const { data: reservations, error: reservationsError } = await supabase
+    let reservationsQuery = supabase
       .from('reservations')
       .select(`
         *,
@@ -39,6 +44,13 @@ export async function GET(request: NextRequest) {
       .lte('check_in', filters.endDate)
       .neq('status', 'cancelled')
       .order('check_in', { ascending: true })
+    
+    // Apply apartment filter if provided
+    if (filters.apartmentIds && filters.apartmentIds.length > 0) {
+      reservationsQuery = reservationsQuery.in('apartment_id', filters.apartmentIds)
+    }
+    
+    const { data: reservations, error: reservationsError } = await reservationsQuery
     
     if (reservationsError) {
       console.error('Calendar API - Query error:', reservationsError)
@@ -55,6 +67,52 @@ export async function GET(request: NextRequest) {
     if (apartmentsError) {
       console.error('Calendar API - Apartments error:', apartmentsError)
       throw new AppError('Failed to fetch apartments', 500)
+    }
+    
+    // Fetch cleanings if requested
+    let transformedCleanings: CalendarCleaning[] = []
+    
+    console.log('Calendar API - includeCleanings:', filters.includeCleanings)
+    
+    if (filters.includeCleanings) {
+      let cleaningsQuery = supabase
+        .from('cleanings')
+        .select(`
+          *,
+          apartments(id, name),
+          cleaners(name)
+        `)
+        .eq('owner_id', user.id)
+        .gte('scheduled_end', filters.startDate)
+        .lte('scheduled_start', filters.endDate)
+        .neq('status', 'cancelled')
+        .order('scheduled_start', { ascending: true })
+      
+      // Apply apartment filter if provided
+      if (filters.apartmentIds && filters.apartmentIds.length > 0) {
+        cleaningsQuery = cleaningsQuery.in('apartment_id', filters.apartmentIds)
+      }
+      
+      const { data: cleanings, error: cleaningsError } = await cleaningsQuery
+      
+      console.log('Calendar API - Cleanings fetched:', cleanings?.length || 0)
+      
+      if (cleaningsError) {
+        console.error('Calendar API - Cleanings error:', cleaningsError)
+        // Don't throw, just log the error and continue without cleanings
+      } else if (cleanings) {
+        transformedCleanings = cleanings.map((cleaning: any) => ({
+          id: cleaning.id,
+          apartmentId: cleaning.apartment_id,
+          apartmentName: cleaning.apartments?.name || 'Unknown',
+          cleanerName: cleaning.cleaners?.name || 'Unassigned',
+          scheduledDate: cleaning.scheduled_start,
+          duration: cleaning.duration || '2 hours',
+          status: cleaning.status,
+          instructions: cleaning.instructions,
+          reservationId: cleaning.reservation_id
+        }))
+      }
     }
     
     // Transform reservations (convert to camelCase for frontend)
@@ -76,6 +134,7 @@ export async function GET(request: NextRequest) {
     
     const calendarData: CalendarData = {
       reservations: transformedReservations,
+      cleanings: transformedCleanings.length > 0 ? transformedCleanings : undefined,
       dateRange: {
         start: filters.startDate,
         end: filters.endDate

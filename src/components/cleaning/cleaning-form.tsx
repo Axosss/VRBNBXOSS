@@ -268,7 +268,6 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
                         onValueChange={field.onChange}
                         apartmentId={selectedApartmentId}
                         scheduledDate={scheduledStart}
-                        showAvailability={true}
                         placeholder="Select a cleaner (optional)"
                       />
                     </FormControl>

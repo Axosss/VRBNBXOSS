@@ -7,7 +7,7 @@ import {
   Calendar, 
   Clock, 
   AlertCircle, 
-  CheckCircle,
+  XCircle,
   Filter,
   List
 } from 'lucide-react'
@@ -60,7 +60,6 @@ export default function CleaningSchedulePage() {
   // URL params for filtering
   const apartmentParam = searchParams.get('apartment')
   const cleanerParam = searchParams.get('cleaner')
-  const statusParam = searchParams.get('status')
 
   useEffect(() => {
     fetchCleanings()
@@ -72,12 +71,11 @@ export default function CleaningSchedulePage() {
   useEffect(() => {
     const filters = {
       apartment_id: apartmentParam || undefined,
-      cleaner_id: cleanerParam || undefined,
-      status: (statusParam as CleaningStatus) || undefined
+      cleaner_id: cleanerParam || undefined
     }
     setCleaningFilters(filters)
     fetchCleanings(filters)
-  }, [apartmentParam, cleanerParam, statusParam, fetchCleanings, setCleaningFilters])
+  }, [apartmentParam, cleanerParam, fetchCleanings, setCleaningFilters])
 
   const handleCleaningClick = (cleaning: Cleaning) => {
     router.push(`/dashboard/cleaning/${cleaning.id}`)
@@ -130,23 +128,26 @@ export default function CleaningSchedulePage() {
     updateUrlFilters({ cleaner: cleanerId })
   }
 
-  const handleStatusFilter = (status: CleaningStatus | null) => {
-    updateUrlFilters({ status })
-  }
-
   const clearFilters = () => {
     router.replace('/dashboard/cleaning')
   }
 
   // Calculate simple stats
+  const now = new Date()
+  const futureCleanings = cleanings.filter(c => {
+    if (c.status === 'cancelled') return false
+    const cleaningDate = new Date(c.scheduledStart)
+    return !isNaN(cleaningDate.getTime()) && cleaningDate > now
+  })
+  
   const stats = {
     total: cleanings.length,
-    scheduled: cleanings.filter(c => c.status === 'scheduled').length,
-    completed: cleanings.filter(c => c.status === 'completed').length
+    future: futureCleanings.length,
+    cancelled: cleanings.filter(c => c.status === 'cancelled').length
   }
 
   const upcomingCleanings = cleanings
-    .filter(c => c.status === 'scheduled')
+    .filter(c => c.status !== 'cancelled')
     .filter(c => c.scheduledStart && c.scheduledEnd) // Filter out cleanings with invalid dates
     .sort((a, b) => {
       const dateA = new Date(a.scheduledStart)
@@ -237,21 +238,21 @@ export default function CleaningSchedulePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
+            <CardTitle className="text-sm font-medium">Future</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.scheduled}</div>
+            <div className="text-2xl font-bold">{stats.future}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Cancelled</CardTitle>
+            <XCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.completed}</div>
+            <div className="text-2xl font-bold">{stats.cancelled}</div>
           </CardContent>
         </Card>
       </div>
@@ -289,20 +290,20 @@ export default function CleaningSchedulePage() {
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
                 className={cn(
-                  (apartmentParam || cleanerParam || statusParam) && 
+                  (apartmentParam || cleanerParam) && 
                   "border-primary bg-primary/5"
                 )}
               >
                 <Filter className="h-4 w-4 mr-2" />
                 Filters
-                {(apartmentParam || cleanerParam || statusParam) && (
+                {(apartmentParam || cleanerParam) && (
                   <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
-                    {[apartmentParam, cleanerParam, statusParam].filter(Boolean).length}
+                    {[apartmentParam, cleanerParam].filter(Boolean).length}
                   </Badge>
                 )}
               </Button>
 
-              {(apartmentParam || cleanerParam || statusParam) && (
+              {(apartmentParam || cleanerParam) && (
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
                   Clear Filters
                 </Button>
@@ -341,19 +342,6 @@ export default function CleaningSchedulePage() {
                   ))}
                 </select>
               )}
-
-              <select
-                value={statusParam || 'all'}
-                onChange={(e) => handleStatusFilter(e.target.value === 'all' ? null : e.target.value as CleaningStatus)}
-                className="px-3 py-1 text-sm border rounded"
-              >
-                <option value="all">All Status</option>
-                <option value="needed">Needed</option>
-                <option value="scheduled">Scheduled</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="verified">Verified</option>
-              </select>
             </div>
           )}
         </CardContent>
@@ -372,10 +360,8 @@ export default function CleaningSchedulePage() {
           onCreateCleaning={handleDateClick}
           selectedApartmentId={apartmentParam}
           selectedCleanerId={cleanerParam}
-          selectedStatus={statusParam as CleaningStatus}
           onApartmentFilter={handleApartmentFilter}
           onCleanerFilter={handleCleanerFilter}
-          onStatusFilter={handleStatusFilter}
           apartments={apartments.map(a => ({ id: a.id, name: a.name }))}
           cleaners={cleaners.map(c => ({ id: c.id, name: c.name }))}
         />

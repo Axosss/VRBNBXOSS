@@ -2,8 +2,6 @@
 
 import { CalendarView, CalendarData } from '@/types/calendar'
 import { CalendarMonthView } from './calendar-month-view'
-import { CalendarWeekView } from './calendar-week-view'
-import { CalendarDayView } from './calendar-day-view'
 
 interface CalendarViewComponentProps {
   data: CalendarData
@@ -22,21 +20,14 @@ export function CalendarViewComponent({
   onNavigate,
   className
 }: CalendarViewComponentProps) {
-  const commonProps = {
-    data,
-    currentDate,
-    onDateClick,
-    onNavigate,
-    className
-  }
-
-  switch (view) {
-    case 'day':
-      return <CalendarDayView {...commonProps} />
-    case 'week':
-      return <CalendarWeekView {...commonProps} />
-    case 'month':
-    default:
-      return <CalendarMonthView {...commonProps} />
-  }
+  // Only month view is supported now
+  return (
+    <CalendarMonthView
+      data={data}
+      currentDate={currentDate}
+      onDateClick={onDateClick}
+      onNavigate={onNavigate}
+      className={className}
+    />
+  )
 }

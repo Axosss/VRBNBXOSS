@@ -10,40 +10,27 @@ interface CleaningStatusBadgeProps {
 }
 
 const statusConfig = {
-  needed: {
-    label: 'Needed',
-    variant: 'secondary' as const,
-    className: 'bg-orange-100 text-orange-800 hover:bg-orange-200'
-  },
-  scheduled: {
-    label: 'Scheduled',
-    variant: 'outline' as const,
-    className: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-  },
-  in_progress: {
-    label: 'In Progress',
+  active: {
+    label: 'Active',
     variant: 'default' as const,
-    className: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-300'
-  },
-  completed: {
-    label: 'Completed',
-    variant: 'secondary' as const,
-    className: 'bg-green-100 text-green-800 hover:bg-green-200'
-  },
-  verified: {
-    label: 'Verified',
-    variant: 'default' as const,
-    className: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-emerald-300'
+    className: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
   },
   cancelled: {
     label: 'Cancelled',
-    variant: 'destructive' as const,
-    className: 'bg-red-100 text-red-800 hover:bg-red-200 border-red-300'
+    variant: 'outline' as const,
+    className: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
   }
 }
 
 export function CleaningStatusBadge({ status, className }: CleaningStatusBadgeProps) {
-  const config = statusConfig[status]
+  // Map legacy statuses to new simplified statuses
+  const mappedStatus = (() => {
+    if (status === 'cancelled') return 'cancelled'
+    // Map all other statuses (scheduled, completed, in_progress, needed, verified) to 'active'
+    return 'active'
+  })()
+  
+  const config = statusConfig[mappedStatus]
   
   return (
     <Badge

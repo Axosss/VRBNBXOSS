@@ -269,7 +269,7 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
   const actualStart = cleaning.actualStart ? formatDateTime(cleaning.actualStart) : null
   const actualEnd = cleaning.actualEnd ? formatDateTime(cleaning.actualEnd) : null
 
-  const isOverdue = (cleaning.status === 'needed' || cleaning.status === 'scheduled') && 
+  const isOverdue = cleaning.status === 'active' && 
     new Date(cleaning.scheduledStart) < new Date()
 
   return (

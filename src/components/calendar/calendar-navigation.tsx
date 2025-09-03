@@ -22,25 +22,8 @@ const viewLabels: Record<CalendarView, string> = {
 }
 
 const getDateDisplayFormat = (date: Date, view: CalendarView): string => {
-  switch (view) {
-    case 'day':
-      return format(date, 'EEEE, MMMM d, yyyy')
-    case 'week':
-      // Show week range
-      const startOfWeek = new Date(date)
-      startOfWeek.setDate(date.getDate() - date.getDay())
-      const endOfWeek = new Date(startOfWeek)
-      endOfWeek.setDate(startOfWeek.getDate() + 6)
-      
-      if (startOfWeek.getMonth() === endOfWeek.getMonth()) {
-        return `${format(startOfWeek, 'MMM d')} - ${format(endOfWeek, 'd, yyyy')}`
-      } else {
-        return `${format(startOfWeek, 'MMM d')} - ${format(endOfWeek, 'MMM d, yyyy')}`
-      }
-    case 'month':
-    default:
-      return format(date, 'MMMM yyyy')
-  }
+  // Only month view is supported now
+  return format(date, 'MMMM yyyy')
 }
 
 export function CalendarNavigation({
@@ -53,21 +36,9 @@ export function CalendarNavigation({
 }: CalendarNavigationProps) {
   const isToday = () => {
     const today = new Date()
-    switch (view) {
-      case 'day':
-        return currentDate.toDateString() === today.toDateString()
-      case 'week':
-        const startOfWeek = new Date(currentDate)
-        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay())
-        const endOfWeek = new Date(startOfWeek)
-        endOfWeek.setDate(startOfWeek.getDate() + 6)
-        return today >= startOfWeek && today <= endOfWeek
-      case 'month':
-        return currentDate.getMonth() === today.getMonth() && 
-               currentDate.getFullYear() === today.getFullYear()
-      default:
-        return false
-    }
+    // Only month view is supported now
+    return currentDate.getMonth() === today.getMonth() && 
+           currentDate.getFullYear() === today.getFullYear()
   }
 
   return (
@@ -111,25 +82,7 @@ export function CalendarNavigation({
         </Button>
       </div>
 
-      {/* View Switcher */}
-      <div className="flex bg-muted rounded-lg p-1 w-fit mx-auto sm:mx-0">
-        {(['month', 'week', 'day'] as CalendarView[]).map((viewOption) => (
-          <Button
-            key={viewOption}
-            variant={view === viewOption ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewChange(viewOption)}
-            className={cn(
-              'px-3 py-1.5 text-sm font-medium rounded-md transition-all',
-              view === viewOption
-                ? 'bg-background shadow-sm text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-            )}
-          >
-            {viewLabels[viewOption]}
-          </Button>
-        ))}
-      </div>
+      {/* View Switcher - Removed as only month view is supported */}
     </div>
   )
 }

@@ -10,9 +10,6 @@ import {
   MapPin,
   User,
   DollarSign,
-  CheckCircle2,
-  AlertCircle,
-  PlayCircle,
   XCircle,
   MoreHorizontal,
   Edit,
@@ -109,25 +106,10 @@ export function CleaningCard({
     }).format(amount)
   }
 
-  const getStatusActions = (currentStatus: CleaningStatus): Array<{
-    label: string
-    status: CleaningStatus
-    icon: any
-    variant?: 'default' | 'destructive'
-  }> => {
-    switch (currentStatus) {
-      case 'scheduled':
-        return [
-          { label: 'Mark Completed', status: 'completed', icon: CheckCircle2 }
-        ]
-      case 'completed':
-        return []  // No actions for completed cleanings
-      default:
-        return []
-    }
-  }
-
-  const statusActions = getStatusActions(cleaning.status)
+  // Only allow cancelling active cleanings
+  const statusActions = cleaning.status === 'active' 
+    ? [{ label: 'Cancel Cleaning', status: 'cancelled' as CleaningStatus, icon: XCircle, variant: 'destructive' as const }]
+    : []
 
   const urgencyColor = () => {
     // Simple - no urgency colors, keep it clean
@@ -287,20 +269,13 @@ export function CleaningCard({
           </div>
         )}
 
-        {/* Actual times for completed cleanings */}
-        {cleaning.status === 'completed' || cleaning.status === 'verified' ? (
-          cleaning.actualStart && cleaning.actualEnd && (
-            <div className="flex items-center gap-4 text-sm text-green-700 bg-green-50 p-2 rounded">
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Completed:</span>
-              </div>
-              <span>
-                {formatDateTime(cleaning.actualStart).time} - {formatDateTime(cleaning.actualEnd).time}
-              </span>
-            </div>
-          )
-        ) : null}
+        {/* Show if cleaning was cancelled */}
+        {cleaning.status === 'cancelled' && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <XCircle className="h-4 w-4" />
+            <span>This cleaning was cancelled</span>
+          </div>
+        )}
 
         {/* No urgency indicators - cleanings are purely informational */}
       </CardContent>

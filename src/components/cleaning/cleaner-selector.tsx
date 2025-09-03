@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { User, Star, DollarSign, AlertCircle, CheckCircle } from 'lucide-react'
+import { User, Star, DollarSign } from 'lucide-react'
 import { useCleaningStore } from '@/lib/stores/cleaning-store'
 import { cn } from '@/lib/utils'
 import type { Cleaner } from '@/types/cleaning'
@@ -23,7 +23,6 @@ interface CleanerSelectorProps {
   className?: string
   placeholder?: string
   disabled?: boolean
-  showAvailability?: boolean
 }
 
 export function CleanerSelector({ 
@@ -33,11 +32,9 @@ export function CleanerSelector({
   scheduledDate,
   className,
   placeholder = "Select cleaner...",
-  disabled = false,
-  showAvailability = false
+  disabled = false
 }: CleanerSelectorProps) {
   const { cleaners, fetchCleaners, isLoading } = useCleaningStore()
-  const [availabilityStatus, setAvailabilityStatus] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     // Only fetch if cleaners are not already loaded
@@ -46,23 +43,6 @@ export function CleanerSelector({
     }
   }, []) // Empty dependency array - only run once on mount
 
-  // Check cleaner availability if date and apartment are provided
-  useEffect(() => {
-    if (showAvailability && scheduledDate && apartmentId && cleaners.length > 0) {
-      // This would typically make an API call to check availability
-      // For now, we'll simulate availability checking
-      const checkAvailability = async () => {
-        const availability: Record<string, boolean> = {}
-        cleaners.forEach(cleaner => {
-          // Simulate availability check - in real implementation this would be an API call
-          availability[cleaner.id] = Math.random() > 0.3 // 70% chance of being available
-        })
-        setAvailabilityStatus(availability)
-      }
-      
-      checkAvailability()
-    }
-  }, [showAvailability, scheduledDate, apartmentId, cleaners])
 
   const getCleanerInitials = (name: string) => {
     return name
@@ -92,23 +72,14 @@ export function CleanerSelector({
   }
 
   const sortedCleaners = [...cleaners].sort((a, b) => {
-    // Sort by availability first (if checking availability)
-    if (showAvailability && scheduledDate) {
-      const aAvailable = availabilityStatus[a.id] ?? true
-      const bAvailable = availabilityStatus[b.id] ?? true
-      if (aAvailable !== bAvailable) {
-        return bAvailable ? 1 : -1
-      }
-    }
-    
-    // Then sort by rating (highest first)
+    // Sort by rating (highest first)
     if (a.rating && b.rating) {
       return b.rating - a.rating
     }
     if (a.rating && !b.rating) return -1
     if (!a.rating && b.rating) return 1
     
-    // Finally sort by name
+    // Then sort by name
     return a.name.localeCompare(b.name)
   })
 
@@ -156,19 +127,11 @@ export function CleanerSelector({
           </SelectItem>
 
           {sortedCleaners.map((cleaner) => {
-            const isAvailable = showAvailability && scheduledDate 
-              ? availabilityStatus[cleaner.id] ?? true 
-              : true
-
             return (
               <SelectItem 
                 key={cleaner.id} 
                 value={cleaner.id}
-                className={cn(
-                  "px-2 py-3",
-                  !isAvailable && "opacity-60"
-                )}
-                disabled={!isAvailable}
+                className="px-2 py-3"
               >
                 <div className="flex items-center gap-3 w-full min-w-0">
                   <Avatar className="h-8 w-8 shrink-0">
@@ -180,17 +143,6 @@ export function CleanerSelector({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium truncate">{cleaner.name}</span>
-                      
-                      {/* Availability indicator */}
-                      {showAvailability && scheduledDate && (
-                        <div className="shrink-0">
-                          {isAvailable ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <AlertCircle className="h-4 w-4 text-orange-600" />
-                          )}
-                        </div>
-                      )}
                     </div>
                     
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -234,20 +186,6 @@ export function CleanerSelector({
           )}
         </SelectContent>
       </Select>
-      
-      {/* Availability legend */}
-      {showAvailability && scheduledDate && cleaners.length > 0 && (
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <CheckCircle className="h-3 w-3 text-green-600" />
-            <span>Available</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <AlertCircle className="h-3 w-3 text-orange-600" />
-            <span>Busy</span>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

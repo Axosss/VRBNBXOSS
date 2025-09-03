@@ -1,6 +1,7 @@
 // Cleaning Management Types
 
-export type CleaningStatus = 'needed' | 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'verified';
+// Simplified status system - legacy values are mapped to 'active' in the UI
+export type CleaningStatus = 'active' | 'cancelled' | 'needed' | 'scheduled' | 'in_progress' | 'completed' | 'verified';
 export type CleaningType = 'standard' | 'checkout';
 
 export interface Cleaner {
