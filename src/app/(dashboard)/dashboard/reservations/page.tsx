@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { ReservationCard } from '@/components/reservations/reservation-card'
 import { ReservationStatusBadge } from '@/components/reservations/reservation-status-badge'
 import { QuickAddModal } from '@/components/calendar/quick-add-modal'
+import { PendingAirbnbImports } from '@/components/reservations/pending-airbnb-imports'
 import type { QuickReservation } from '@/types/calendar'
 
 export default function ReservationsPage() {
@@ -218,6 +219,9 @@ export default function ReservationsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Pending Airbnb Imports */}
+      <PendingAirbnbImports />
 
       {/* Stats Cards */}
       {pagination && (
