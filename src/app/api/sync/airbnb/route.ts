@@ -1,11 +1,8 @@
-// API endpoint for manual Airbnb iCal sync
+// API endpoint for manual iCal sync (supports Airbnb and VRBO)
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { AirbnbICalParser } from '@/lib/ical/parser';
+import { UniversalICalParser } from '@/lib/ical/parser';
 import { DeltaTracker } from '@/lib/ical/delta';
-
-// Temporary hardcoded iCal URL - in production, store encrypted in database
-const BOCCADOR_ICAL_URL = 'https://www.airbnb.fr/calendar/ical/35252063.ics?s=5e6099b3fafb1b558aa139c53ab59ed5';
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,19 +60,91 @@ export async function POST(request: NextRequest) {
     
     console.log(`Starting sync for apartment ${targetApartmentId}...`);
     
-    // Parse iCal data
-    const parser = new AirbnbICalParser();
-    const events = await parser.parseFromUrlAsync(BOCCADOR_ICAL_URL);
+    // Get iCal URLs for this apartment
+    const { data: icalUrls, error: urlError } = await supabase
+      .from('apartment_ical_urls')
+      .select('*')
+      .eq('apartment_id', targetApartmentId)
+      .eq('is_active', true);
     
-    console.log(`Parsed ${events.length} events from iCal`);
+    if (urlError || !icalUrls || icalUrls.length === 0) {
+      return NextResponse.json(
+        { 
+          error: 'No iCal URLs configured for this apartment',
+          message: 'Please configure iCal URLs in apartment settings'
+        },
+        { status: 404 }
+      );
+    }
     
-    // Filter for reservations only
-    const reservations = events.filter(e => e.isReservation);
-    console.log(`Found ${reservations.length} reservations`);
+    console.log(`Found ${icalUrls.length} iCal URLs to sync`);
+    
+    // Parse all iCal feeds
+    const parser = new UniversalICalParser();
+    let allEvents: any[] = [];
+    let allReservations: any[] = [];
+    let syncResults: any[] = [];
+    
+    for (const urlConfig of icalUrls) {
+      try {
+        console.log(`Syncing ${urlConfig.platform} from ${urlConfig.ical_url.substring(0, 50)}...`);
+        
+        const events = await parser.parseFromUrlAsync(urlConfig.ical_url);
+        console.log(`Parsed ${events.length} events from ${urlConfig.platform}`);
+        
+        // Filter for reservations only
+        const reservations = events.filter(e => e.isReservation);
+        console.log(`Found ${reservations.length} reservations from ${urlConfig.platform}`);
+        
+        // Add platform info to each event
+        events.forEach(e => {
+          e.platform = urlConfig.platform;
+          e.syncSource = `${urlConfig.platform}_ical`;
+        });
+        
+        allEvents = allEvents.concat(events);
+        allReservations = allReservations.concat(reservations);
+        
+        syncResults.push({
+          platform: urlConfig.platform,
+          eventsFound: events.length,
+          reservationsFound: reservations.length,
+          url: urlConfig.ical_url.substring(0, 50) + '...'
+        });
+        
+        // Update last sync timestamp for this URL
+        await supabase
+          .from('apartment_ical_urls')
+          .update({
+            last_sync_at: new Date().toISOString(),
+            last_sync_status: 'success'
+          })
+          .eq('id', urlConfig.id);
+          
+      } catch (error) {
+        console.error(`Error syncing ${urlConfig.platform}:`, error);
+        
+        // Update error status
+        await supabase
+          .from('apartment_ical_urls')
+          .update({
+            last_sync_at: new Date().toISOString(),
+            last_sync_status: 'error'
+          })
+          .eq('id', urlConfig.id);
+          
+        syncResults.push({
+          platform: urlConfig.platform,
+          error: error.message
+        });
+      }
+    }
+    
+    console.log(`Total: ${allEvents.length} events, ${allReservations.length} reservations from all platforms`);
     
     // Calculate checksum for change detection
     const deltaTracker = new DeltaTracker();
-    const currentChecksum = deltaTracker.calculateChecksum(events);
+    const currentChecksum = deltaTracker.calculateChecksum(allEvents);
     
     // Check previous checksum
     const { data: checksumData } = await supabase
@@ -92,15 +161,17 @@ export async function POST(request: NextRequest) {
         apartment_id: targetApartmentId,
         sync_timestamp: new Date().toISOString(),
         status: 'no_changes',
-        message: `No changes detected. ${events.length} events unchanged.`
+        message: `No changes detected. ${allEvents.length} events unchanged.`,
+        metadata: { syncResults }
       });
       
       return NextResponse.json({
         success: true,
         hasChanges: false,
+        syncResults,
         message: 'No changes detected',
-        eventsFound: events.length,
-        reservationsFound: reservations.length
+        eventsFound: allEvents.length,
+        reservationsFound: allReservations.length
       });
     }
     
@@ -108,17 +179,18 @@ export async function POST(request: NextRequest) {
     let newCount = 0;
     let updatedCount = 0;
     
-    for (const reservation of reservations) {
+    for (const reservation of allReservations) {
       const stagingData = {
         apartment_id: targetApartmentId,
-        platform: 'airbnb' as const,
-        sync_source: 'airbnb_ical',
+        platform: reservation.platform || 'airbnb' as const,
+        sync_source: reservation.syncSource || `${reservation.platform}_ical`,
         sync_uid: reservation.uid,
         sync_url: reservation.reservationUrl,
         raw_data: reservation.raw,
         check_in: reservation.checkIn.toISOString().split('T')[0], // Date only
         check_out: reservation.checkOut.toISOString().split('T')[0], // Date only
         status_text: reservation.summary,
+        guest_name: reservation.guestName || null, // Add guest name from VRBO
         phone_last_four: reservation.phoneLast4 || null,
         stage_status: 'pending' as const,
         last_seen_at: new Date().toISOString()
@@ -155,7 +227,7 @@ export async function POST(request: NextRequest) {
       apartment_id: targetApartmentId,
       current_checksum: currentChecksum,
       last_sync: new Date().toISOString(),
-      events_count: events.length,
+      events_count: allEvents.length,
       updated_at: new Date().toISOString()
     });
     
@@ -164,7 +236,8 @@ export async function POST(request: NextRequest) {
       apartment_id: targetApartmentId,
       sync_timestamp: new Date().toISOString(),
       status: 'changes_detected',
-      message: `Synced ${reservations.length} reservations. ${newCount} new, ${updatedCount} updated.`
+      message: `Synced ${allReservations.length} reservations. ${newCount} new, ${updatedCount} updated.`,
+      metadata: { syncResults }
     });
     
     // Create alert if new reservations
@@ -173,8 +246,8 @@ export async function POST(request: NextRequest) {
         alert_type: 'new_booking',
         severity: 'info',
         apartment_id: targetApartmentId,
-        title: `${newCount} New Airbnb Reservation${newCount > 1 ? 's' : ''}`,
-        message: `${newCount} new reservation${newCount > 1 ? 's' : ''} detected from Airbnb. Review and confirm in the Reservations page.`,
+        title: `${newCount} New Reservation${newCount > 1 ? 's' : ''}`,
+        message: `${newCount} new reservation${newCount > 1 ? 's' : ''} detected from iCal sync. Review and confirm in the Reservations page.`,
         action_url: '/reservations',
         is_read: false,
         is_resolved: false
@@ -185,8 +258,9 @@ export async function POST(request: NextRequest) {
       success: true,
       hasChanges: true,
       message: `Sync completed. ${newCount} new, ${updatedCount} updated.`,
-      eventsFound: events.length,
-      reservationsFound: reservations.length,
+      eventsFound: allEvents.length,
+      reservationsFound: allReservations.length,
+      syncResults,
       newReservations: newCount,
       updatedReservations: updatedCount
     });

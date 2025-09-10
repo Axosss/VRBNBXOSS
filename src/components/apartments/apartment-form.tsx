@@ -13,7 +13,9 @@ import {
   Dumbbell,
   Shield,
   X,
-  Plus
+  Plus,
+  Calendar,
+  Link
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,12 +40,18 @@ import { apartmentCreateSchema, apartmentUpdateSchema, type ApartmentCreateInput
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 
 interface ApartmentFormProps {
-  initialData?: Partial<ApartmentCreateInput>
+  initialData?: Partial<ApartmentCreateInput> & {
+    icalUrls?: {
+      airbnb?: string
+      vrbo?: string
+    }
+  }
   onSubmit: (data: ApartmentCreateInput | ApartmentUpdateInput) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
   submitLabel?: string
   isEdit?: boolean
+  onICalUrlsChange?: (urls: { airbnb?: string; vrbo?: string }) => Promise<void>
 }
 
 const COMMON_AMENITIES = [
@@ -64,6 +72,7 @@ export function ApartmentForm({
   isLoading = false,
   submitLabel = 'Save Property',
   isEdit = false,
+  onICalUrlsChange,
 }: ApartmentFormProps) {
   const [additionalCodesArray, setAdditionalCodesArray] = useState<Array<{id: string, name: string, code: string}>>(
     initialData?.accessCodes?.additional 
@@ -74,6 +83,11 @@ export function ApartmentForm({
         }))
       : []
   )
+  
+  const [icalUrls, setICalUrls] = useState({
+    airbnb: initialData?.icalUrls?.airbnb || '',
+    vrbo: initialData?.icalUrls?.vrbo || '',
+  })
   
   const schema = isEdit ? apartmentUpdateSchema : apartmentCreateSchema
   
@@ -129,6 +143,12 @@ export function ApartmentForm({
     }
   }
 
+  const handleICalUrlUpdate = async () => {
+    if (onICalUrlsChange) {
+      await onICalUrlsChange(icalUrls)
+    }
+  }
+
   const handleSubmit = async (data: ApartmentCreateInput) => {
     // Convert additional codes array back to object
     const additionalCodesObj: Record<string, string> = {}
@@ -159,6 +179,11 @@ export function ApartmentForm({
     }
     
     await onSubmit(cleanedData)
+    
+    // Also save iCal URLs if handler is provided
+    if (onICalUrlsChange && (icalUrls.airbnb || icalUrls.vrbo)) {
+      await handleICalUrlUpdate()
+    }
   }
 
   return (
@@ -497,6 +522,68 @@ export function ApartmentForm({
             </div>
           </CardContent>
         </Card>
+
+        {/* Platform Integrations - Only show in edit mode */}
+        {isEdit && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Platform Integrations
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Connect your Airbnb and VRBO calendars to automatically sync reservations. 
+                    You can find these URLs in your host dashboard on each platform.
+                  </p>
+                </div>
+
+                {/* Airbnb iCal URL */}
+                <div className="space-y-2">
+                  <Label htmlFor="airbnb-ical" className="flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    Airbnb iCal URL
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="airbnb-ical"
+                      type="url"
+                      placeholder="https://www.airbnb.com/calendar/ical/..."
+                      value={icalUrls.airbnb}
+                      onChange={(e) => setICalUrls(prev => ({ ...prev, airbnb: e.target.value }))}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Find this in Airbnb: Host Dashboard → Calendar → Import & Export Calendar
+                  </p>
+                </div>
+
+                {/* VRBO iCal URL */}
+                <div className="space-y-2">
+                  <Label htmlFor="vrbo-ical" className="flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    VRBO iCal URL
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="vrbo-ical"
+                      type="url"
+                      placeholder="http://www.vrbo.com/icalendar/..."
+                      value={icalUrls.vrbo}
+                      onChange={(e) => setICalUrls(prev => ({ ...prev, vrbo: e.target.value }))}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Find this in VRBO: Calendar → Reservation Calendar → Export Calendar
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Actions */}
         <div className="flex items-center gap-4 pt-6">

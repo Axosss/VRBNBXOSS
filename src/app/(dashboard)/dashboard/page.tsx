@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Building, Calendar, Users, TrendingUp } from 'lucide-react'
+import { AirbnbSyncWidget } from '@/components/dashboard/airbnb-sync-widget'
 
 export const metadata: Metadata = {
   title: 'Dashboard | VRBNBXOSS',
@@ -72,8 +73,15 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Welcome Card */}
-      <Card>
+      {/* Second Row - Platform Sync and Welcome */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Airbnb Sync Widget */}
+        <div className="lg:col-span-1">
+          <AirbnbSyncWidget />
+        </div>
+
+        {/* Welcome Card */}
+        <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Welcome to VRBNBXOSS</CardTitle>
           <CardDescription>
@@ -101,6 +109,7 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
