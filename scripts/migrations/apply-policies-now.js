@@ -1,7 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.env.local' });
 
-const supabaseUrl = 'https://fdfigwvbawfaefmdhxaj.supabase.co';
-const serviceRoleKey = '***REMOVED***';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceRoleKey) {
+  console.error('❌ Missing environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  console.error('Please add them to your .env.local file');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   db: { schema: 'public' },
@@ -78,7 +85,7 @@ async function applyPolicies() {
 
     // Test with anon key
     console.log('📝 Testing public access...\n');
-    const anonKey = '***REMOVED***';
+    const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkZmlnd3ZiYXdmYWVmbWRoeGFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNjUyMDYsImV4cCI6MjA3MTY0MTIwNn0.MH4RM6lphbuUyRIjGBo8sDgQ5QjhZBAqG7zNj0v0-yc';
     
     const publicClient = createClient(supabaseUrl, anonKey, {
       auth: { persistSession: false }
