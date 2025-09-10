@@ -8,6 +8,8 @@ export interface ParsedEvent {
   description?: string;
   isReservation: boolean;
   isBlocked: boolean;
+  platform?: 'airbnb' | 'vrbo' | 'unknown'; // Detected platform
+  guestName?: string; // Extracted guest name
   platformId?: string; // Extracted from URL (e.g., HM25Z3NPQA)
   phoneLast4?: string;
   reservationUrl?: string;

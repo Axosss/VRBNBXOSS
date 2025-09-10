@@ -1,12 +1,99 @@
-// Airbnb iCal Parser
+// Universal iCal Parser (supports Airbnb and VRBO)
 import * as ical from 'node-ical';
 import { ParsedEvent } from './types';
 
-export class AirbnbICalParser {
+export type Platform = 'airbnb' | 'vrbo' | 'unknown';
+
+export class UniversalICalParser {
+  /**
+   * Detect platform from iCal data
+   */
+  detectPlatform(icalData: string): Platform {
+    if (icalData.includes('HomeAway.com')) return 'vrbo';
+    if (icalData.includes('Airbnb') || icalData.includes('airbnb.com')) return 'airbnb';
+    return 'unknown';
+  }
+
+  /**
+   * Check if event is a reservation based on platform
+   */
+  private isReservation(summary: string, platform: Platform): boolean {
+    const summaryLower = summary.toLowerCase();
+    
+    if (platform === 'vrbo') {
+      // VRBO uses "Reserved - Name" format
+      return summary.startsWith('Reserved - ');
+    } else {
+      // Airbnb uses various formats but contains "reserved" or guest info
+      return summaryLower.includes('reserved') && 
+             !summaryLower.includes('not available');
+    }
+  }
+
+  /**
+   * Check if event is blocked/unavailable
+   */
+  private isBlocked(summary: string, platform: Platform): boolean {
+    const summaryLower = summary.toLowerCase();
+    
+    if (platform === 'vrbo') {
+      // VRBO uses "Blocked" for unavailable dates
+      return summary === 'Blocked';
+    } else {
+      // Airbnb uses "Not available" or "Airbnb (Not available)"
+      return summaryLower.includes('not available') || 
+             summaryLower.includes('airbnb');
+    }
+  }
+
+  /**
+   * Extract guest name based on platform format
+   */
+  private extractGuestName(summary: string, platform: Platform): string | undefined {
+    if (platform === 'vrbo' && summary.startsWith('Reserved - ')) {
+      // VRBO: "Reserved - Michael" -> "Michael"
+      return summary.replace('Reserved - ', '').trim();
+    } else if (platform === 'airbnb') {
+      // Airbnb: Try to extract name from summary (varies by format)
+      // Could be "Reserved - Name (XXXX)" or just "Name (XXXX)"
+      const match = summary.match(/^(?:Reserved - )?([^(]+)/);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Extract phone last 4 digits (Airbnb only)
+   */
+  private extractPhoneLast4(summary: string, description: string, platform: Platform): string | undefined {
+    if (platform === 'vrbo') {
+      // VRBO doesn't include phone in iCal
+      return undefined;
+    }
+    
+    // Try summary first (Airbnb sometimes has it as "(XXXX)")
+    const summaryMatch = summary.match(/\((\d{4})\)/);
+    if (summaryMatch) {
+      return summaryMatch[1];
+    }
+    
+    // Then try description
+    if (description) {
+      const phoneMatch = description.match(/(?:Phone|Tel)[^:]*:\s*(\d{4})/i);
+      if (phoneMatch) {
+        return phoneMatch[1];
+      }
+    }
+    
+    return undefined;
+  }
   /**
    * Parse iCal data string into structured events
    */
-  parse(icalData: string): ParsedEvent[] {
+  parse(icalData: string, platformOverride?: Platform): ParsedEvent[] {
+    const platform = platformOverride || this.detectPlatform(icalData);
     const events = ical.parseICS(icalData);
     const parsed: ParsedEvent[] = [];
     
@@ -18,12 +105,14 @@ export class AirbnbICalParser {
       
       // Check if it's a reservation or just blocked dates
       const summary = event.summary || '';
-      const isReservation = summary.toLowerCase().includes('reserved');
-      const isBlocked = summary.toLowerCase().includes('not available') || 
-                        summary.toLowerCase().includes('airbnb');
+      const isReservation = this.isReservation(summary, platform);
+      const isBlocked = this.isBlocked(summary, platform);
       
       // Skip if neither reservation nor blocked
       if (!isReservation && !isBlocked) continue;
+      
+      // Extract guest name based on platform format
+      const guestName = this.extractGuestName(summary, platform);
       
       // Extract reservation ID from URL
       // Example: https://www.airbnb.com/hosting/reservations/details/HM25Z3NPQA
@@ -41,15 +130,8 @@ export class AirbnbICalParser {
         }
       }
       
-      // Extract phone last 4 digits
-      // Example: Phone Number (Last 4 Digits): 1207
-      let phoneLast4: string | undefined;
-      if (event.description) {
-        const phoneMatch = event.description.match(/(?:Phone|Tel)[^:]*:\s*(\d{4})/i);
-        if (phoneMatch) {
-          phoneLast4 = phoneMatch[1];
-        }
-      }
+      // Extract phone last 4 digits (platform-aware)
+      const phoneLast4 = this.extractPhoneLast4(summary, event.description || '', platform);
       
       // Convert dates (Airbnb uses DATE format, not DATETIME)
       const checkIn = this.parseDate(event.start);
@@ -68,6 +150,8 @@ export class AirbnbICalParser {
         description: event.description,
         isReservation,
         isBlocked,
+        platform,
+        guestName,
         platformId,
         phoneLast4,
         reservationUrl,
@@ -121,11 +205,13 @@ export class AirbnbICalParser {
           if (event.type !== 'VEVENT') continue;
           
           const summary = event.summary || '';
-          const isReservation = summary.toLowerCase().includes('reserved');
-          const isBlocked = summary.toLowerCase().includes('not available') || 
-                            summary.toLowerCase().includes('airbnb');
+          const platform = this.detectPlatform(JSON.stringify(data)); // Quick detection from data
+          const isReservation = this.isReservation(summary, platform);
+          const isBlocked = this.isBlocked(summary, platform);
           
           if (!isReservation && !isBlocked) continue;
+          
+          const guestName = this.extractGuestName(summary, platform);
           
           let platformId: string | undefined;
           let reservationUrl: string | undefined;
@@ -141,10 +227,7 @@ export class AirbnbICalParser {
               }
             }
             
-            const phoneMatch = event.description.match(/(?:Phone|Tel)[^:]*:\s*(\d{4})/i);
-            if (phoneMatch) {
-              phoneLast4 = phoneMatch[1];
-            }
+            phoneLast4 = this.extractPhoneLast4(summary, event.description || '', platform);
           }
           
           const checkIn = this.parseDate(event.start);
@@ -160,6 +243,8 @@ export class AirbnbICalParser {
             description: event.description,
             isReservation,
             isBlocked,
+            platform,
+            guestName,
             platformId,
             phoneLast4,
             reservationUrl,
@@ -229,3 +314,6 @@ export class AirbnbICalParser {
     return metadata;
   }
 }
+
+// Export with both names for compatibility
+export const AirbnbICalParser = UniversalICalParser;

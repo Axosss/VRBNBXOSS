@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 interface PendingImport {
   id: string;
   apartment_id: string;
+  platform?: 'airbnb' | 'vrbo' | 'direct';
+  guest_name?: string;
   check_in: string;
   check_out: string;
   status_text: string;
@@ -70,6 +72,7 @@ export function PendingAirbnbImports() {
   const handleConfirm = async (importId: string) => {
     setProcessingId(importId);
     const data = formData[importId] || {};
+    const import_ = pendingImports.find(p => p.id === importId);
     
     try {
       const response = await fetch('/api/staging/reservations', {
@@ -78,7 +81,7 @@ export function PendingAirbnbImports() {
         body: JSON.stringify({
           id: importId,
           action: 'confirm',
-          guestName: data.guestName || 'Guest',
+          guestName: data.guestName || import_?.guest_name || 'Guest',
           guestCount: parseInt(data.guestCount) || 2,
           totalPrice: parseFloat(data.totalPrice) || 0,
           cleaningFee: parseFloat(data.cleaningFee) || 0,
@@ -199,7 +202,7 @@ export function PendingAirbnbImports() {
           <div className="flex items-center gap-3">
             <Check className="h-5 w-5 text-green-500" />
             <span className="text-sm text-muted-foreground">
-              All Airbnb reservations are up to date
+              All platform reservations are up to date
             </span>
             {syncStatus?.lastSync && (
               <span className="text-xs text-muted-foreground">
@@ -241,7 +244,7 @@ export function PendingAirbnbImports() {
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-yellow-500" />
                 <h3 className="font-semibold">
-                  Pending Airbnb Imports ({pendingImports.length} new)
+                  Pending Platform Imports ({pendingImports.length} new)
                 </h3>
               </div>
               {syncStatus?.lastSync && (
@@ -285,7 +288,17 @@ export function PendingAirbnbImports() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 text-yellow-600">
                     <Clock className="h-4 w-4" />
-                    <span className="text-sm font-medium">PENDING IMPORT FROM AIRBNB</span>
+                    <span className="text-sm font-medium">PENDING IMPORT</span>
+                    {/* Platform Badge */}
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                      import_.platform === 'vrbo' 
+                        ? 'bg-blue-100 text-blue-700' 
+                        : import_.platform === 'airbnb'
+                        ? 'bg-pink-100 text-pink-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {(import_.platform || 'airbnb').toUpperCase()}
+                    </span>
                     {import_.apartments && (
                       <span className="text-xs text-muted-foreground">• {import_.apartments.name}</span>
                     )}
@@ -300,15 +313,22 @@ export function PendingAirbnbImports() {
                     </span>
                   </div>
                   
-                  {import_.phone_last_four && (
+                  {(import_.guest_name || import_.phone_last_four) && (
                     <div className="flex items-center gap-1">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span>Phone (last 4): {import_.phone_last_four}</span>
+                      <span>
+                        {import_.guest_name && `${import_.guest_name}`}
+                        {import_.guest_name && import_.phone_last_four && ' • '}
+                        {import_.phone_last_four && `Phone: ****${import_.phone_last_four}`}
+                      </span>
                     </div>
                   )}
                   
                   <div className="text-orange-600">
-                    ⚠️ Missing: Guest name, price
+                    ⚠️ Missing: {[
+                      !import_.guest_name && "Guest name",
+                      "Price"
+                    ].filter(Boolean).join(", ")}
                   </div>
                 </div>
 
@@ -320,8 +340,8 @@ export function PendingAirbnbImports() {
                         <input
                           type="text"
                           className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                          placeholder="Enter guest name"
-                          value={formData[import_.id]?.guestName || ''}
+                          placeholder={import_.guest_name || "Enter guest name"}
+                          value={formData[import_.id]?.guestName || import_.guest_name || ''}
                           onChange={(e) => updateFormField(import_.id, 'guestName', e.target.value)}
                         />
                       </div>
@@ -389,9 +409,14 @@ export function PendingAirbnbImports() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => window.open(`https://www.airbnb.com/hosting/reservations`, '_blank')}
+                        onClick={() => window.open(
+                          import_.platform === 'vrbo' 
+                            ? `https://www.vrbo.com/rm/reservations`
+                            : `https://www.airbnb.com/hosting/reservations`, 
+                          '_blank'
+                        )}
                       >
-                        View on Airbnb
+                        View on {import_.platform === 'vrbo' ? 'VRBO' : 'Airbnb'}
                       </Button>
                     </div>
                   </div>
