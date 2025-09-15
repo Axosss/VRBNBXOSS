@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         apartment_id,
+        platform,
+        guest_name,
         check_in,
         check_out,
         status_text,
@@ -57,6 +59,32 @@ export async function GET(request: NextRequest) {
         { error: 'Failed to fetch pending imports' },
         { status: 500 }
       );
+    }
+    
+    // Check for conflicts with existing reservations
+    if (pendingImports && pendingImports.length > 0) {
+      for (const staging of pendingImports) {
+        // Find overlapping reservations for the same apartment
+        const { data: conflicts, error: conflictError } = await supabase
+          .from('reservations')
+          .select('id, check_in, check_out, guest_id, guests(name)')
+          .eq('apartment_id', staging.apartment_id)
+          .eq('status', 'confirmed')
+          .gte('check_out', staging.check_in)
+          .lte('check_in', staging.check_out);
+        
+        if (conflictError) {
+          console.error('Error checking conflicts:', conflictError);
+        }
+        
+        // Add conflict info to staging reservation
+        (staging as any).has_conflict = conflicts && conflicts.length > 0;
+        (staging as any).conflicting_reservations = conflicts || [];
+        
+        if (conflicts && conflicts.length > 0) {
+          console.log(`Conflict found for ${staging.check_in} - ${staging.check_out}:`, conflicts);
+        }
+      }
     }
     
     return NextResponse.json({
@@ -166,6 +194,7 @@ export async function PATCH(request: NextRequest) {
         .from('reservations')
         .insert({
           apartment_id: stagingReservation.apartment_id,
+          owner_id: user.id, // Add owner_id for RLS policy
           guest_id: guestId,
           platform: stagingReservation.platform,
           check_in: stagingReservation.check_in,
@@ -174,8 +203,7 @@ export async function PATCH(request: NextRequest) {
           cleaning_fee: cleaningFee || 0,
           guest_count: guestCount || 2,
           status: 'confirmed',
-          notes: notes || `Imported from ${stagingReservation.platform} on ${new Date().toLocaleDateString()}`,
-          created_by: user.id
+          notes: notes || `Imported from ${stagingReservation.platform} on ${new Date().toLocaleDateString()}`
         })
         .select()
         .single();

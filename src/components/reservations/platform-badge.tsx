@@ -27,6 +27,11 @@ const platformConfig = {
     className: 'bg-blue-800 text-white',
     color: '#003580',
   },
+  rent: {
+    label: 'Loyer',
+    className: 'bg-purple-600 text-white',
+    color: '#8B5CF6',
+  },
 }
 
 export function PlatformBadge({ platform, className = '', size = 'sm' }: PlatformBadgeProps) {

@@ -74,6 +74,10 @@ export function PendingAirbnbImports() {
     const data = formData[importId] || {};
     const import_ = pendingImports.find(p => p.id === importId);
     
+    // Debug log to see what we're sending
+    const guestName = data.guestName || import_?.guest_name || 'Guest';
+    console.log('Sending guest name:', guestName, 'from form data:', data.guestName, 'or import:', import_?.guest_name);
+    
     try {
       const response = await fetch('/api/staging/reservations', {
         method: 'PATCH',
@@ -81,7 +85,7 @@ export function PendingAirbnbImports() {
         body: JSON.stringify({
           id: importId,
           action: 'confirm',
-          guestName: data.guestName || import_?.guest_name || 'Guest',
+          guestName: guestName,
           guestCount: parseInt(data.guestCount) || 2,
           totalPrice: parseFloat(data.totalPrice) || 0,
           cleaningFee: parseFloat(data.cleaningFee) || 0,
@@ -299,6 +303,12 @@ export function PendingAirbnbImports() {
                     }`}>
                       {(import_.platform || 'airbnb').toUpperCase()}
                     </span>
+                    {/* Conflict Badge */}
+                    {(import_ as any).has_conflict && (
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700">
+                        ⚠️ CONFLICT
+                      </span>
+                    )}
                     {import_.apartments && (
                       <span className="text-xs text-muted-foreground">• {import_.apartments.name}</span>
                     )}
@@ -309,7 +319,7 @@ export function PendingAirbnbImports() {
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      {format(new Date(import_.check_in), 'MMM d')} - {format(new Date(import_.check_out), 'MMM d')}
+                      {format(new Date(import_.check_in + 'T12:00:00'), 'MMM d')} - {format(new Date(import_.check_out + 'T12:00:00'), 'MMM d')}
                     </span>
                   </div>
                   
@@ -334,6 +344,21 @@ export function PendingAirbnbImports() {
 
                 {expandedCard === import_.id && (
                   <div className="mt-4 space-y-3 border-t pt-4">
+                    {/* Show conflict details if any */}
+                    {(import_ as any).has_conflict && (
+                      <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                        <p className="text-sm font-medium text-red-800 mb-1">
+                          ⚠️ Conflict detected with existing reservation(s):
+                        </p>
+                        {(import_ as any).conflicting_reservations?.map((conflict: any) => (
+                          <p key={conflict.id} className="text-xs text-red-700">
+                            • {format(new Date(conflict.check_in + 'T12:00:00'), 'MMM d')} - 
+                            {format(new Date(conflict.check_out + 'T12:00:00'), 'MMM d')}
+                            {conflict.guests?.name && ` (${conflict.guests.name})`}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium">Guest Name</label>

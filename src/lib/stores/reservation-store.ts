@@ -42,7 +42,7 @@ export interface Reservation {
   apartmentId: string
   ownerId: string
   guestId: string
-  platform: 'airbnb' | 'vrbo' | 'direct' | 'booking_com'
+  platform: 'airbnb' | 'vrbo' | 'direct' | 'booking_com' | 'rent'
   platformReservationId?: string
   checkIn: string
   checkOut: string

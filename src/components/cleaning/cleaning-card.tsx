@@ -106,9 +106,11 @@ export function CleaningCard({
     }).format(amount)
   }
 
-  // Only allow cancelling active cleanings
-  const statusActions = cleaning.status === 'active' 
-    ? [{ label: 'Cancel Cleaning', status: 'cancelled' as CleaningStatus, icon: XCircle, variant: 'destructive' as const }]
+  // Status-based actions
+  const statusActions = cleaning.status === 'scheduled' 
+    ? [{ label: 'Start Cleaning', status: 'in_progress' as CleaningStatus, icon: XCircle, variant: 'default' as const }]
+    : cleaning.status === 'in_progress'
+    ? [{ label: 'Complete Cleaning', status: 'completed' as CleaningStatus, icon: XCircle, variant: 'default' as const }]
     : []
 
   const urgencyColor = () => {

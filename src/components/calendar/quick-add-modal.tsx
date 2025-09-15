@@ -40,7 +40,8 @@ const platformOptions = [
   { value: 'airbnb', label: 'Airbnb' },
   { value: 'vrbo', label: 'VRBO' },
   { value: 'direct', label: 'Direct Booking' },
-  { value: 'booking_com', label: 'Booking.com' }
+  { value: 'booking_com', label: 'Booking.com' },
+  { value: 'rent', label: 'Loyer' }
 ] as const
 
 export function QuickAddModal({

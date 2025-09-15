@@ -161,46 +161,8 @@ export async function PUT(
       }
     }
     
-    // Check for scheduling conflicts if changing schedule
-    if (updateData.scheduledStart) {
-      const newDate = new Date(updateData.scheduledStart);
-      
-      // Check conflicts with reservations
-      const { data: conflicts, error: conflictError } = await supabase
-        .from('reservations')
-        .select('id')
-        .eq('apartment_id', existingCleaning.apartment_id)
-        .neq('status', 'cancelled')
-        .or(`and(check_in.lte.${newDate.toISOString()},check_out.gte.${newDate.toISOString()})`)
-        .limit(1);
-      
-      if (conflictError) {
-        throw new AppError('Failed to verify availability', 500);
-      }
-      
-      if (conflicts && conflicts.length > 0) {
-        throw new AppError('New schedule conflicts with existing reservation', 409);
-      }
-      
-      // Check conflicts with other cleanings on the same time period
-      const endDate = updateData.scheduledEnd || new Date(newDate.getTime() + 2 * 60 * 60 * 1000).toISOString();
-      const { data: cleaningConflicts, error: cleaningConflictError } = await supabase
-        .from('cleanings')
-        .select('id')
-        .eq('apartment_id', existingCleaning.apartment_id)
-        .neq('id', cleaningId)
-        .neq('status', 'cancelled')
-        .or(`and(scheduled_start.lte.${endDate},scheduled_end.gte.${newDate.toISOString()})`)
-        .limit(1);
-      
-      if (cleaningConflictError) {
-        throw new AppError('Failed to check cleaning conflicts', 500);
-      }
-      
-      if (cleaningConflicts && cleaningConflicts.length > 0) {
-        throw new AppError('Another cleaning is already scheduled for this date', 409);
-      }
-    }
+    // No conflict checking - cleanings are purely informational
+    // Users can create cleanings at any time, even overlapping
     
     // Prepare update data
     const cleanedData: Record<string, unknown> = {};
@@ -315,20 +277,17 @@ export async function DELETE(
     }
     
     if (existingCleaning.status === 'in_progress') {
-      throw new AppError('Cannot cancel cleaning that is in progress', 400);
+      throw new AppError('Cannot delete cleaning that is in progress', 400);
     }
     
     if (existingCleaning.status === 'completed' || existingCleaning.status === 'verified') {
-      throw new AppError('Cannot cancel completed cleaning', 400);
+      throw new AppError('Cannot delete completed cleaning', 400);
     }
     
-    // Update status to cancelled (no hard delete)
+    // Perform hard delete
     const { error: deleteError } = await supabase
       .from('cleanings')
-      .update({ 
-        status: 'cancelled', 
-        updated_at: new Date().toISOString() 
-      })
+      .delete()
       .eq('id', cleaningId);
     
     if (deleteError) {
@@ -336,7 +295,7 @@ export async function DELETE(
     }
     
     return NextResponse.json(
-      createSuccessResponse(null, 'Cleaning cancelled successfully')
+      createSuccessResponse(null, 'Cleaning deleted successfully')
     );
     
   } catch (error) {
@@ -349,7 +308,7 @@ export async function DELETE(
     
     console.error('Delete cleaning error:', error);
     return NextResponse.json(
-      createErrorResponse('Failed to cancel cleaning', 500),
+      createErrorResponse('Failed to delete cleaning', 500),
       { status: 500 }
     );
   }

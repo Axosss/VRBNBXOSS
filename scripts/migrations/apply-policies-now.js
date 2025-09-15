@@ -85,7 +85,7 @@ async function applyPolicies() {
 
     // Test with anon key
     console.log('📝 Testing public access...\n');
-    const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkZmlnd3ZiYXdmYWVmbWRoeGFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwNjUyMDYsImV4cCI6MjA3MTY0MTIwNn0.MH4RM6lphbuUyRIjGBo8sDgQ5QjhZBAqG7zNj0v0-yc';
+    const anonKey = '***REMOVED***';
     
     const publicClient = createClient(supabaseUrl, anonKey, {
       auth: { persistSession: false }

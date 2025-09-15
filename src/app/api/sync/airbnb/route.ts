@@ -153,6 +153,7 @@ export async function POST(request: NextRequest) {
       .eq('apartment_id', targetApartmentId)
       .single();
     
+    // Check if there are actual changes
     const hasChanges = !checksumData || checksumData.current_checksum !== currentChecksum;
     
     if (!hasChanges) {
@@ -180,6 +181,26 @@ export async function POST(request: NextRequest) {
     let updatedCount = 0;
     
     for (const reservation of allReservations) {
+      // Debug log to see what dates we're getting from parser
+      console.log(`Processing ${reservation.guestName}:`, {
+        checkIn: reservation.checkIn,
+        checkOut: reservation.checkOut,
+        checkInISO: reservation.checkIn.toISOString(),
+        checkOutISO: reservation.checkOut.toISOString(),
+        checkInLocal: reservation.checkIn.toLocaleDateString(),
+        checkOutLocal: reservation.checkOut.toLocaleDateString()
+      });
+      
+      // Format dates using local components to avoid timezone issues
+      const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const result = `${year}-${month}-${day}`;
+        console.log(`formatLocalDate: ${date} -> ${result}`);
+        return result;
+      };
+      
       const stagingData = {
         apartment_id: targetApartmentId,
         platform: reservation.platform || 'airbnb' as const,
@@ -187,8 +208,8 @@ export async function POST(request: NextRequest) {
         sync_uid: reservation.uid,
         sync_url: reservation.reservationUrl,
         raw_data: reservation.raw,
-        check_in: reservation.checkIn.toISOString().split('T')[0], // Date only
-        check_out: reservation.checkOut.toISOString().split('T')[0], // Date only
+        check_in: formatLocalDate(reservation.checkIn), // Use local date components
+        check_out: formatLocalDate(reservation.checkOut), // Use local date components
         status_text: reservation.summary,
         guest_name: reservation.guestName || null, // Add guest name from VRBO
         phone_last_four: reservation.phoneLast4 || null,
@@ -204,14 +225,20 @@ export async function POST(request: NextRequest) {
         .single();
       
       if (existing) {
-        // Update existing
-        await supabase
+        // Update existing - FORCE update all fields including dates
+        const { error: updateError } = await supabase
           .from('reservation_staging')
           .update({
             ...stagingData,
             updated_at: new Date().toISOString()
           })
           .eq('id', existing.id);
+        
+        if (updateError) {
+          console.error(`Failed to update staging ${reservation.uid}:`, updateError);
+        } else {
+          console.log(`Updated staging ${reservation.uid}: ${stagingData.check_in} to ${stagingData.check_out}`);
+        }
         updatedCount++;
       } else {
         // Insert new

@@ -12,7 +12,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     initialize()
-  }, [initialize])
+  }, []) // Only run once on mount
 
   return <>{children}</>
 }

@@ -134,8 +134,8 @@ export class UniversalICalParser {
       const phoneLast4 = this.extractPhoneLast4(summary, event.description || '', platform);
       
       // Convert dates (Airbnb uses DATE format, not DATETIME)
-      const checkIn = this.parseDate(event.start);
-      const checkOut = this.parseDate(event.end);
+      const checkIn = this.parseDate(event.start, false);
+      let checkOut = this.parseDate(event.end, true); // Pass true for end date
       
       if (!checkIn || !checkOut) {
         console.warn(`Skipping event with invalid dates: ${event.uid}`);
@@ -230,8 +230,8 @@ export class UniversalICalParser {
             phoneLast4 = this.extractPhoneLast4(summary, event.description || '', platform);
           }
           
-          const checkIn = this.parseDate(event.start);
-          const checkOut = this.parseDate(event.end);
+          const checkIn = this.parseDate(event.start, false);
+          const checkOut = this.parseDate(event.end, true); // Pass true for end date
           
           if (!checkIn || !checkOut) continue;
           
@@ -259,38 +259,62 @@ export class UniversalICalParser {
   
   /**
    * Helper to parse various date formats
+   * @param date - The date to parse
+   * @param isEndDate - If true and date is DATE format (not DATETIME), adjust for exclusive end
    */
-  private parseDate(date: any): Date | null {
+  private parseDate(date: any, isEndDate: boolean = false): Date | null {
     if (!date) return null;
     
-    // If it's already a Date object
-    if (date instanceof Date) {
-      return date;
-    }
+    let parsedDate: Date | null = null;
+    let isDateOnly = false;
     
+    // node-ical returns a Date object with a 'dateOnly' property for DATE format
+    // Check for this special case first
+    if (date instanceof Date || (date && typeof date.getTime === 'function')) {
+      // Check if it has the dateOnly flag (node-ical adds this for VALUE=DATE)
+      if ((date as any).dateOnly === true) {
+        isDateOnly = true;
+        // For DATE values, node-ical creates dates at local midnight
+        // We need to use the local date, not UTC
+        parsedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      } else {
+        parsedDate = new Date(date.getTime());
+      }
+    }
     // If it's a string, try to parse it
-    if (typeof date === 'string') {
-      const parsed = new Date(date);
-      return isNaN(parsed.getTime()) ? null : parsed;
+    else if (typeof date === 'string') {
+      parsedDate = new Date(date);
+      if (isNaN(parsedDate.getTime())) {
+        return null;
+      }
     }
-    
     // If it's an object with date properties (from node-ical)
-    if (date && typeof date === 'object') {
+    else if (date && typeof date === 'object') {
       // node-ical sometimes returns objects with year, month, day
       if (date.year && date.month && date.day) {
-        return new Date(date.year, date.month - 1, date.day);
+        parsedDate = new Date(date.year, date.month - 1, date.day);
+        isDateOnly = true; // This is a DATE format (no time)
       }
-      
-      // Or it might have a dateOnly property
-      if (date.dateOnly) {
+      // Or it might have a dateOnly property as a string
+      else if (date.dateOnly && typeof date.dateOnly === 'string') {
         const parts = date.dateOnly.toString().match(/(\d{4})(\d{2})(\d{2})/);
         if (parts) {
-          return new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]));
+          parsedDate = new Date(parseInt(parts[1]), parseInt(parts[2]) - 1, parseInt(parts[3]));
+          isDateOnly = true; // This is a DATE format (no time)
         }
       }
     }
     
-    return null;
+    // For DATE format (not DATETIME), DTEND is exclusive per iCal spec
+    // But node-ical already handles this, so we don't need to subtract again
+    // We just need to ensure we're using the correct date
+    if (parsedDate && isEndDate && isDateOnly) {
+      // Don't subtract here - node-ical already did it
+      // Just ensure we're using the local date, not UTC
+      parsedDate = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+    }
+    
+    return parsedDate;
   }
   
   /**

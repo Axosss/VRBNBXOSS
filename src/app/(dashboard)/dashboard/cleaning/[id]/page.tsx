@@ -18,7 +18,8 @@ import {
   Trash2,
   UserPlus,
   FileText,
-  Camera
+  Camera,
+  XCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,7 +52,8 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
     error,
     fetchCleaning,
     updateCleaning,
-    cancelCleaning
+    cancelCleaning,
+    deleteCleaning
   } = useCleaningStore()
 
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -212,55 +214,31 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
   }
 
   const handleDeleteCleaning = async () => {
-    try {
-      await cancelCleaning(cleaning.id)
-      router.push('/dashboard/cleaning')
-    } catch (error) {
-      console.error('Failed to delete cleaning:', error)
+    if (window.confirm('Are you sure you want to permanently delete this cleaning?')) {
+      try {
+        await deleteCleaning(cleaning.id)
+        router.push('/dashboard/cleaning')
+      } catch (error) {
+        console.error('Failed to delete cleaning:', error)
+        alert('Failed to delete cleaning: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      }
+    }
+  }
+  
+  const handleCancelCleaning = async () => {
+    if (window.confirm('Are you sure you want to cancel this cleaning?')) {
+      try {
+        await cancelCleaning(cleaning.id)
+      } catch (error) {
+        console.error('Failed to cancel cleaning:', error)
+        alert('Failed to cancel cleaning: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      }
     }
   }
 
+  // Simplified - no status workflow actions
   const getStatusActions = (currentStatus: CleaningStatus) => {
-    switch (currentStatus) {
-      case 'needed':
-        return [
-          { 
-            label: 'Mark Scheduled', 
-            status: 'scheduled' as CleaningStatus, 
-            icon: Calendar, 
-            variant: 'default' as const 
-          },
-        ]
-      case 'scheduled':
-        return [
-          { 
-            label: 'Start Cleaning', 
-            status: 'in_progress' as CleaningStatus, 
-            icon: PlayCircle, 
-            variant: 'default' as const 
-          },
-        ]
-      case 'in_progress':
-        return [
-          { 
-            label: 'Mark Completed', 
-            status: 'completed' as CleaningStatus, 
-            icon: CheckCircle2, 
-            variant: 'default' as const 
-          },
-        ]
-      case 'completed':
-        return [
-          { 
-            label: 'Verify Quality', 
-            status: 'verified' as CleaningStatus, 
-            icon: CheckCircle2, 
-            variant: 'default' as const 
-          },
-        ]
-      default:
-        return []
-    }
+    return [] // No status transitions - cleanings are purely informational
   }
 
   const statusActions = getStatusActions(cleaning.status)
@@ -269,7 +247,7 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
   const actualStart = cleaning.actualStart ? formatDateTime(cleaning.actualStart) : null
   const actualEnd = cleaning.actualEnd ? formatDateTime(cleaning.actualEnd) : null
 
-  const isOverdue = cleaning.status === 'active' && 
+  const isOverdue = cleaning.status === 'scheduled' && 
     new Date(cleaning.scheduledStart) < new Date()
 
   return (
@@ -293,40 +271,42 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
           </p>
         </div>
         <div className="flex gap-2">
+          {/* Temporarily adding Edit button without Dialog to test */}
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => {
-              // For now, navigate to an edit page
-              // In a full implementation, this would open a dialog
-              router.push(`/dashboard/cleaning/${cleaningId}/edit`)
-            }}
+            onClick={() => setShowEditDialog(true)}
           >
             <Edit className="h-4 w-4 mr-2" />
             Edit
           </Button>
+          
+          <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Cleaning</DialogTitle>
+              </DialogHeader>
+              <CleaningForm
+                mode="edit"
+                initialData={cleaning}
+                onSubmit={handleEditCleaning}
+                onCancel={() => setShowEditDialog(false)}
+              />
+            </DialogContent>
+          </Dialog>
 
-          {cleaning.status !== 'cancelled' && cleaning.status !== 'verified' && (
-            <div className="flex gap-2">
-              {statusActions.map((action) => (
-                <Button
-                  key={action.status}
-                  variant={action.variant}
-                  size="sm"
-                  onClick={() => handleStatusChange(action.status)}
-                  disabled={isUpdating}
-                  className="gap-2"
-                >
-                  {isUpdating ? (
-                    <LoadingSpinner className="h-4 w-4" />
-                  ) : (
-                    <action.icon className="h-4 w-4" />
-                  )}
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          )}
+          {/* Only show Delete button - no Cancel since we don't track status */}
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteCleaning}
+            disabled={isUpdating}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </Button>
+
+          {/* Status workflow buttons removed - cleanings are purely informational */}
         </div>
       </div>
 
@@ -641,29 +621,7 @@ export default function CleaningDetailsPage({ params }: CleaningDetailsPageProps
             </Card>
           )}
 
-          {/* Danger Zone */}
-          {cleaning.status !== 'cancelled' && cleaning.status !== 'verified' && (
-            <Card className="border-red-200">
-              <CardHeader>
-                <CardTitle className="text-red-700">Danger Zone</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to cancel this cleaning? This action cannot be undone.')) {
-                      handleDeleteCleaning()
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Cancel Cleaning
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {/* Danger Zone removed - no Cancel button needed */}
         </div>
       </div>
     </div>

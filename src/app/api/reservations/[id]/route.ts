@@ -212,6 +212,44 @@ export async function PUT(
     
     console.log('Updating with data:', JSON.stringify(dbUpdateData, null, 2))
     
+    // Check if we need to update the guest name
+    if ((updateData as any).guestName !== undefined) {
+      // First, get the guest_id from the reservation
+      const { data: currentRes } = await supabase
+        .from('reservations')
+        .select('guest_id')
+        .eq('id', id)
+        .single()
+      
+      if (currentRes?.guest_id) {
+        // Update the guest name
+        await supabase
+          .from('guests')
+          .update({ 
+            name: (updateData as any).guestName,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentRes.guest_id)
+          .eq('owner_id', user.id) // Ensure the guest belongs to the user
+      } else if ((updateData as any).guestName) {
+        // If no guest exists, create one
+        const { data: newGuest } = await supabase
+          .from('guests')
+          .insert({
+            name: (updateData as any).guestName,
+            owner_id: user.id,
+            created_by: user.id
+          })
+          .select()
+          .single()
+        
+        if (newGuest) {
+          // Link the new guest to the reservation
+          dbUpdateData.guest_id = newGuest.id
+        }
+      }
+    }
+    
     // Update reservation (DB triggers will handle validation)
     const { data: updatedReservation, error: updateError } = await supabase
       .from('reservations')

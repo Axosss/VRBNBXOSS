@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
       scheduled_start: cleaningData.scheduledStart,
       scheduled_end: cleaningData.scheduledEnd,
       cleaning_type: cleaningData.cleaningType || 'standard',
-      status: 'active',
+      status: 'scheduled',
       instructions: cleaningData.instructions ? sanitizeText(cleaningData.instructions) : null,
       supplies: cleaningData.supplies || {},
       cost: cleaningData.cost || null,

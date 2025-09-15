@@ -2,8 +2,12 @@ import { z } from 'zod';
 
 // Enums
 export const cleaningStatusEnum = z.enum([
+  'needed',
   'scheduled',
-  'completed'
+  'in_progress',
+  'completed',
+  'verified',
+  'cancelled'
 ]);
 
 export const cleaningTypeEnum = z.enum([

@@ -47,7 +47,7 @@ type FormData = z.infer<typeof createCleaningSchema> | z.infer<typeof updateClea
 
 export function CleaningForm({ initialData, mode, onSubmit, onCancel }: CleaningFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { apartments, fetchApartments } = useApartmentStore()
+  const { apartments, fetchApartments, isLoading: isLoadingApartments } = useApartmentStore()
 
   const form = useForm<FormData>({
     resolver: zodResolver(mode === 'create' ? createCleaningSchema : updateCleaningSchema),
@@ -68,16 +68,12 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
           cleanerId: initialData?.cleanerId || null,
           scheduledStart: initialData?.scheduledStart ? isoToLocalDateTime(initialData.scheduledStart) : '',
           scheduledEnd: initialData?.scheduledEnd ? isoToLocalDateTime(initialData.scheduledEnd) : '',
-          actualStart: initialData?.actualStart ? isoToLocalDateTime(initialData.actualStart) : null,
-          actualEnd: initialData?.actualEnd ? isoToLocalDateTime(initialData.actualEnd) : null,
-          status: initialData?.status || 'needed',
-          cleaningType: 'standard',
+          status: initialData?.status || 'scheduled',
+          cleaningType: initialData?.cleaningType || 'standard',
           instructions: initialData?.instructions || '',
           supplies: initialData?.supplies || {},
-          photos: initialData?.photos || [],
           cost: initialData?.cost || null,
-          rating: initialData?.rating || null,
-          notes: initialData?.notes || '',
+          currency: initialData?.currency || 'EUR',
         },
   })
 
@@ -134,16 +130,12 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
           cleanerId: updateData.cleanerId,
           scheduledStart: updateData.scheduledStart ? localDateTimeToISO(updateData.scheduledStart) : undefined,
           scheduledEnd: updateData.scheduledEnd ? localDateTimeToISO(updateData.scheduledEnd) : undefined,
-          actualStart: updateData.actualStart ? localDateTimeToISO(updateData.actualStart) : null,
-          actualEnd: updateData.actualEnd ? localDateTimeToISO(updateData.actualEnd) : null,
           status: updateData.status,
           cleaningType: updateData.cleaningType,
           instructions: updateData.instructions,
           supplies: updateData.supplies,
-          photos: updateData.photos,
           cost: updateData.cost,
-          rating: updateData.rating,
-          notes: updateData.notes
+          currency: updateData.currency
         }
         await onSubmit(transformedData)
       }
@@ -351,103 +343,7 @@ export function CleaningForm({ initialData, mode, onSubmit, onCancel }: Cleaning
             </CardContent>
           </Card>
 
-          {/* Edit mode: Actual completion times and notes */}
-          {mode === 'edit' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Completion Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="actualStart"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Actual Start Time</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="datetime-local"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="actualEnd"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Actual End Time</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="datetime-local"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="rating"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Quality Rating</FormLabel>
-                      <FormControl>
-                        <Select 
-                          onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                          value={field.value?.toString() || ''}
-                        >
-                          <SelectTrigger className="w-48">
-                            <SelectValue placeholder="Rate the cleaning quality" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="5">⭐⭐⭐⭐⭐ Excellent</SelectItem>
-                            <SelectItem value="4">⭐⭐⭐⭐ Good</SelectItem>
-                            <SelectItem value="3">⭐⭐⭐ Average</SelectItem>
-                            <SelectItem value="2">⭐⭐ Below Average</SelectItem>
-                            <SelectItem value="1">⭐ Poor</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <textarea
-                          {...field}
-                          placeholder="Any additional notes about the cleaning..."
-                          className="w-full h-20 px-3 py-2 text-sm border border-input bg-background rounded-md resize-none"
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-          )}
+          {/* Completion Details section removed - cleanings are purely informational */}
 
           {/* Submit buttons */}
           <div className="flex justify-end gap-2">
