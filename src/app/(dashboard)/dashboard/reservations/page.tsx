@@ -34,6 +34,7 @@ export default function ReservationsPage() {
   const [sortOrder, setSortOrder] = useState<string>('desc')
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false)
+  const itemsPerPage = 50
   
   const { 
     reservations,
@@ -53,9 +54,10 @@ export default function ReservationsPage() {
   } = useApartmentStore()
 
   useEffect(() => {
-    fetchReservations()
+    fetchReservations({ page: 1, limit: itemsPerPage })
     fetchApartmentsData({ limit: 100 }) // Get all apartments for filter
-  }, [fetchReservations, fetchApartmentsData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency array - only run on mount
 
   useEffect(() => {
     const filters: any = {}
@@ -72,7 +74,7 @@ export default function ReservationsPage() {
     
     // Debounce search
     const timeoutId = setTimeout(() => {
-      fetchReservations({ page: 1, limit: 100, ...filters })
+      fetchReservations({ page: 1, limit: itemsPerPage, ...filters })
     }, 300)
     
     return () => clearTimeout(timeoutId)
@@ -90,7 +92,7 @@ export default function ReservationsPage() {
     setCurrentPage(newPage)
     fetchReservations({ 
       page: newPage, 
-      limit: 100, 
+      limit: itemsPerPage, 
       ...filters 
     })
   }
@@ -127,7 +129,7 @@ export default function ReservationsPage() {
       const result = await response.json()
       
       // Refresh the reservations list
-      fetchReservations({ page: currentPage, limit: 100 })
+      fetchReservations({ page: currentPage, limit: itemsPerPage })
       
       // Close the modal
       setIsQuickAddOpen(false)
@@ -389,7 +391,7 @@ export default function ReservationsPage() {
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between border-t pt-4">
               <div className="text-sm text-muted-foreground">
-                Showing {((currentPage - 1) * 100) + 1} to {Math.min(currentPage * 100, pagination.total)} of {pagination.total} reservations
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, pagination.total)} of {pagination.total} reservations
               </div>
               <div className="flex items-center gap-2">
                 <Button 

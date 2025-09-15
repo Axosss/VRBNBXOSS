@@ -27,7 +27,8 @@ export function ProtectedRoute({
         router.push('/dashboard')
       }
     }
-  }, [isAuthenticated, isLoading, requireAuth, router, redirectTo])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isLoading]) // Only re-run when auth state actually changes
 
   // Show loading spinner while checking authentication
   if (isLoading) {
