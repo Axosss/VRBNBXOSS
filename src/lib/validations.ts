@@ -91,7 +91,9 @@ export const reservationCreateSchema = z.object({
   }
 )
 
-export const reservationUpdateSchema = reservationCreateSchema.partial().omit({ apartmentId: true })
+export const reservationUpdateSchema = reservationCreateSchema.partial().omit({ apartmentId: true }).extend({
+  guestName: z.string().min(1, 'Guest name is required').optional()
+})
 
 // Cleaner schemas
 export const cleanerCreateSchema = z.object({

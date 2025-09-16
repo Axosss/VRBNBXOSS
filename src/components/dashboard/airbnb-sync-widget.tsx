@@ -79,7 +79,7 @@ export function AirbnbSyncWidget() {
     <Card className={hasPending ? 'border-yellow-500/50' : ''}>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span className="text-lg">Airbnb Sync</span>
+          <span className="text-lg">To be synced</span>
           <Button
             variant="ghost"
             size="sm"

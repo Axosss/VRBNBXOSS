@@ -233,19 +233,21 @@ export async function PUT(
           .eq('owner_id', user.id) // Ensure the guest belongs to the user
       } else if ((updateData as any).guestName) {
         // If no guest exists, create one
-        const { data: newGuest } = await supabase
+        const { data: newGuest, error: guestCreateError } = await supabase
           .from('guests')
           .insert({
             name: (updateData as any).guestName,
-            owner_id: user.id,
-            created_by: user.id
+            owner_id: user.id
           })
           .select()
           .single()
-        
-        if (newGuest) {
+
+        if (guestCreateError) {
+          console.error('Failed to create guest:', guestCreateError)
+        } else if (newGuest) {
           // Link the new guest to the reservation
           dbUpdateData.guest_id = newGuest.id
+          console.log('Created new guest with ID:', newGuest.id)
         }
       }
     }
