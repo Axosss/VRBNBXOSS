@@ -178,8 +178,7 @@ export async function PATCH(request: NextRequest) {
           .from('guests')
           .insert({
             name: guestName,
-            phone_last_four: stagingReservation.phone_last_four,
-            created_by: user.id
+            owner_id: user.id
           })
           .select()
           .single();

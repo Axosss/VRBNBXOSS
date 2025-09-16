@@ -39,8 +39,7 @@ export async function POST(request: NextRequest) {
           .insert({
             name: 'Boccador Test',
             address: '123 Test St',
-            owner_id: user.id,
-            created_by: user.id
+            owner_id: user.id
           })
           .select()
           .single();

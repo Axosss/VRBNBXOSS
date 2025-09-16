@@ -15,7 +15,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Documentation Memories
 - Please use context to find the relevant, up-to-date documentation when working with 3rd party libraries, packages, frameworks, etc as needed.
 
-## Project OverviewOui
+## Playwright Browser Management
+  - Always check existing tabs with `browser_tabs` action="list" before navigating
+  - Close unused tabs with `browser_tabs` action="close" to prevent accumulation of about:blank tabs
+  - Use `browser_close` after completing browser-based tasks
+  - Never attempt multiple `browser_navigate` calls without checking browser state first
+  - If you get "Browser already in use" error, close the browser with `browser_close` before retrying
+
+## Project Overview
 VRBNBXOSS is a comprehensive rental property management dashboard for property owners managing multiple apartments across Airbnb, VRBO, and direct bookings. The system helps track reservations, schedule cleanings, manage guest information, and analyze business performance.
 
 ## Architecture

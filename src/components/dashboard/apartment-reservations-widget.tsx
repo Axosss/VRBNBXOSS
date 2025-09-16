@@ -16,6 +16,8 @@ interface Reservation {
   checkIn: string
   checkOut: string
   guest: Guest | null
+  guestName?: string
+  contactInfo?: any
   daysRemaining?: number
 }
 
@@ -133,7 +135,11 @@ export function ApartmentReservationsWidget() {
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">
-                      {item.currentReservation.guest?.name || 'Guest'}
+                      {item.currentReservation.guest?.name ||
+                       item.currentReservation.guestName ||
+                       item.currentReservation.contactInfo?.name ||
+                       item.currentReservation.contactInfo?.guestName ||
+                       'Guest'}
                     </span>
                   </div>
 
@@ -159,7 +165,11 @@ export function ApartmentReservationsWidget() {
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">
-                      {item.nextReservation.guest?.name || 'Guest'}
+                      {item.nextReservation.guest?.name ||
+                       item.nextReservation.guestName ||
+                       item.nextReservation.contactInfo?.name ||
+                       item.nextReservation.contactInfo?.guestName ||
+                       'Guest'}
                     </span>
                   </div>
 

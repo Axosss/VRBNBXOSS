@@ -29,6 +29,7 @@ export function mapReservationFromDB(db: ReservationDB): Reservation {
     checkOut: db.check_out,
     
     // Guest and pricing information - now in camelCase
+    guestName: db.guest_name,
     guestCount: db.guest_count,
     totalPrice: db.total_price,
     cleaningFee: db.cleaning_fee,
