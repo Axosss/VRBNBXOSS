@@ -599,7 +599,7 @@ export type Database = {
       apartment_status: "active" | "inactive" | "maintenance"
       cleaning_status: "scheduled" | "in_progress" | "completed" | "cancelled"
       platform_type: "airbnb" | "vrbo" | "direct" | "booking_com"
-      reservation_platform: "airbnb" | "vrbo" | "direct"
+      reservation_platform: "airbnb" | "vrbo" | "direct" | "rent"
       reservation_status:
         | "pending"
         | "confirmed"
@@ -740,7 +740,7 @@ export const Constants = {
       apartment_status: ["active", "inactive", "maintenance"],
       cleaning_status: ["scheduled", "in_progress", "completed", "cancelled"],
       platform_type: ["airbnb", "vrbo", "direct", "booking_com"],
-      reservation_platform: ["airbnb", "vrbo", "direct"],
+      reservation_platform: ["airbnb", "vrbo", "direct", "rent"],
       reservation_status: [
         "pending",
         "confirmed",

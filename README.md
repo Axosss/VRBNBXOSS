@@ -33,36 +33,15 @@ A comprehensive rental property management dashboard built with Next.js 14, Supa
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Supabase account
-- Docker (for local Supabase development)
+- Supabase account (gratuit sur [supabase.com](https://supabase.com))
 
 ### 1. Clone and Install
 
 ```bash
-cd vrbnbxoss-app
 npm install
 ```
 
-### 2. Supabase Setup
-
-#### Option A: Local Development with Docker
-```bash
-# Start local Supabase
-npm run db:start
-
-# Apply migrations
-npm run db:migrate
-
-# Generate TypeScript types
-npm run db:types
-```
-
-#### Option B: Cloud Supabase
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Copy your project URL and API keys
-3. Update `.env.local` with your credentials
-
-### 3. Environment Variables
+### 2. Environment Variables
 
 Copy `.env.example` to `.env.local` and update:
 
@@ -80,7 +59,7 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```
 
-### 4. Run the Application
+### 3. Run the Application
 
 ```bash
 npm run dev
@@ -135,13 +114,6 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 npm run dev              # Start development server
 npm run build           # Build for production
 npm run start           # Start production server
-
-# Database
-npm run db:start        # Start local Supabase
-npm run db:migrate      # Apply migrations
-npm run db:reset        # Reset database
-npm run db:types        # Generate TypeScript types
-npm run db:status       # Check Supabase status
 
 # Quality
 npm run lint            # Run ESLint

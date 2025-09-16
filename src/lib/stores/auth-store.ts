@@ -344,12 +344,17 @@ export const useAuthStore = create<AuthState>()(
 
 // Set up Supabase auth state change listener
 supabase.auth.onAuthStateChange((event, session) => {
-  const { setSession, initialize } = useAuthStore.getState()
+  const { setSession, initialize, user } = useAuthStore.getState()
   
   switch (event) {
     case 'SIGNED_IN':
-      setSession(session)
-      initialize()
+      // Only initialize if we don't have a user yet
+      if (!user) {
+        setSession(session)
+        initialize()
+      } else {
+        setSession(session)
+      }
       break
     case 'SIGNED_OUT':
       setSession(null)
@@ -361,6 +366,12 @@ supabase.auth.onAuthStateChange((event, session) => {
       })
       break
     case 'TOKEN_REFRESHED':
+      // Only update the session, don't reinitialize the entire auth state
+      // This prevents unnecessary API calls when the token is refreshed (e.g., on tab focus)
+      setSession(session)
+      break
+    case 'USER_UPDATED':
+      // Just update the session, don't refetch everything
       setSession(session)
       break
   }

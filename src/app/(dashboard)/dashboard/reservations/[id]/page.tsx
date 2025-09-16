@@ -76,7 +76,8 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
       platform: selectedReservation?.platform,
       notes: selectedReservation?.notes || '',
       contactInfo: selectedReservation?.contactInfo || {},
-      status: selectedReservation?.status
+      status: selectedReservation?.status,
+      guestName: selectedReservation?.guest?.name || ''
     })
   }
 
@@ -147,8 +148,8 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
     })
   }
 
-  const formatCurrency = (amount: number, currency: string = 'USD') => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number, currency: string = 'EUR') => {
+    return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: currency,
     }).format(amount)
@@ -405,11 +406,21 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
             <CardContent className="space-y-4">
               <div>
                 <h4 className="font-semibold mb-2">Primary Guest</h4>
-                <p className="text-muted-foreground">
-                  {selectedReservation.guest?.name || 
-                   (selectedReservation.contactInfo as any)?.name || 
-                   'No guest information'}
-                </p>
+                {isEditMode ? (
+                  <Input
+                    type="text"
+                    value={editedData?.guestName || ''}
+                    onChange={(e) => updateField('guestName', e.target.value)}
+                    placeholder="Enter guest name"
+                    className="w-full"
+                  />
+                ) : (
+                  <p className="text-muted-foreground">
+                    {selectedReservation.guest?.name || 
+                     (selectedReservation.contactInfo as any)?.name || 
+                     'No guest information'}
+                  </p>
+                )}
               </div>
               
               {selectedReservation.guest && (
@@ -472,7 +483,25 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Platform:</span>
-                <PlatformBadge platform={selectedReservation.platform} />
+                {isEditMode ? (
+                  <Select
+                    value={editedData?.platform || selectedReservation.platform}
+                    onValueChange={(value) => updateField('platform', value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="airbnb">Airbnb</SelectItem>
+                      <SelectItem value="vrbo">VRBO</SelectItem>
+                      <SelectItem value="direct">Direct</SelectItem>
+                      <SelectItem value="booking_com">Booking.com</SelectItem>
+                      <SelectItem value="rent">Loyer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <PlatformBadge platform={selectedReservation.platform} />
+                )}
               </div>
               
               {selectedReservation.platformReservationId && (

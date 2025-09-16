@@ -46,6 +46,7 @@ export default function CleaningSchedulePage() {
     fetchCleaners,
     createCleaning,
     updateCleaning,
+    deleteCleaning,
     setCleaningFilters,
     clearError
   } = useCleaningStore()
@@ -100,6 +101,18 @@ export default function CleaningSchedulePage() {
       console.error('Failed to update cleaning status:', error)
     }
   }
+  
+  const handleDeleteCleaning = async (id: string) => {
+    if (window.confirm('Are you sure you want to permanently delete this cleaning?')) {
+      try {
+        await deleteCleaning(id)
+        await fetchCleanings() // Refresh the list
+      } catch (error) {
+        console.error('Failed to delete cleaning:', error)
+        alert('Failed to delete cleaning: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      }
+    }
+  }
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date)
@@ -149,6 +162,11 @@ export default function CleaningSchedulePage() {
   const upcomingCleanings = cleanings
     .filter(c => c.status !== 'cancelled')
     .filter(c => c.scheduledStart && c.scheduledEnd) // Filter out cleanings with invalid dates
+    .filter(c => {
+      // Only show future cleanings in upcoming section
+      const cleaningDate = new Date(c.scheduledStart)
+      return !isNaN(cleaningDate.getTime()) && cleaningDate >= now
+    })
     .sort((a, b) => {
       const dateA = new Date(a.scheduledStart)
       const dateB = new Date(b.scheduledStart)
@@ -386,6 +404,7 @@ export default function CleaningSchedulePage() {
                   key={cleaning.id}
                   cleaning={cleaning}
                   onEdit={(cleaning) => router.push(`/dashboard/cleaning/${cleaning.id}`)}
+                  onDelete={handleDeleteCleaning}
                   onStatusChange={handleStatusChange}
                   onClick={handleCleaningClick}
                 />
@@ -410,8 +429,10 @@ export default function CleaningSchedulePage() {
                 key={cleaning.id}
                 cleaning={cleaning}
                 onClick={handleCleaningClick}
+                onDelete={handleDeleteCleaning}
+                onStatusChange={handleStatusChange}
                 compact={true}
-                showActions={false}
+                showActions={true}
               />
             ))}
           </CardContent>

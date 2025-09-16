@@ -118,8 +118,8 @@ export function isDateRangeOverlapping(
 // Currency utilities
 export function formatCurrency(
   amount: number,
-  currency: string = 'USD',
-  locale: string = 'en-US'
+  currency: string = 'EUR',
+  locale: string = 'fr-FR'
 ): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',

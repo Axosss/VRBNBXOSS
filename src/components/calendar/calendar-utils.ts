@@ -301,8 +301,8 @@ export function calculateNights(checkIn: string | Date, checkOut: string | Date)
 }
 
 // Format currency for display
-export function formatCurrency(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+export function formatCurrency(amount: number, currency = 'EUR'): string {
+  return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: currency
   }).format(amount)

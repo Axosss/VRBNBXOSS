@@ -72,7 +72,7 @@ export const guestUpdateSchema = guestCreateSchema.partial()
 export const reservationCreateSchema = z.object({
   apartmentId: z.string().uuid('Invalid apartment ID'),
   guestId: z.string().uuid('Invalid guest ID').optional().nullable(),
-  platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com']),
+  platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com', 'rent']),
   platformReservationId: z.string().optional().nullable(),
   checkIn: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid check-in date'),
   checkOut: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid check-out date'),
@@ -140,7 +140,7 @@ export const apartmentFilterSchema = z.object({
 
 export const reservationFilterSchema = z.object({
   status: z.enum(['confirmed', 'cancelled']).optional(),
-  platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com']).optional(),
+  platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com', 'rent']).optional(),
   apartmentId: z.string().uuid().optional(),
   search: z.string().optional(),
   startDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid start date').optional(),
@@ -189,7 +189,7 @@ export const quickReservationSchema = z.object({
   checkOut: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid check-out date'),
   guestName: z.string().min(1, 'Guest name is required').max(100, 'Guest name too long'),
   guestCount: z.number().int().min(1, 'Guest count must be at least 1').max(50, 'Guest count too high'),
-  platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com']),
+  platform: z.enum(['airbnb', 'vrbo', 'direct', 'booking_com', 'rent']),
   totalPrice: z.number().min(0, 'Total price cannot be negative').max(999999, 'Total price too high'),
   notes: z.string().max(1000, 'Notes too long').optional(),
 }).refine(

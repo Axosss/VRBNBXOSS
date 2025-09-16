@@ -100,9 +100,9 @@ export default function StatisticsPage() {
   }, [dateRange, selectedApartment])
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'EUR',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount)
@@ -224,7 +224,7 @@ export default function StatisticsPage() {
         <Card className="p-6">
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Revenue by Platform</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Airbnb</span>
@@ -284,6 +284,26 @@ export default function StatisticsPage() {
                   />
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Loyer</span>
+                  <span className="text-sm font-medium">
+                    {((statistics.platformBreakdown.rent / statistics.totalRevenue) * 100 || 0).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-[#8B5CF6]">
+                  {formatCurrency(statistics.platformBreakdown.rent || 0)}
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-[#8B5CF6] h-2 rounded-full"
+                    style={{
+                      width: `${(statistics.platformBreakdown.rent / statistics.totalRevenue) * 100 || 0}%`
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </Card>
@@ -320,7 +340,7 @@ export default function StatisticsPage() {
                   <YAxis 
                     className="text-xs"
                     tick={{ fill: 'currentColor' }}
-                    tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
+                    tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k€` : `${value}€`}
                   />
                   <Tooltip 
                     formatter={(value: number) => formatCurrency(value)}
@@ -363,7 +383,7 @@ export default function StatisticsPage() {
                   <YAxis 
                     className="text-xs"
                     tick={{ fill: 'currentColor' }}
-                    tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`}
+                    tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k€` : `${value}€`}
                   />
                   <Tooltip 
                     formatter={(value: number) => formatCurrency(value)}

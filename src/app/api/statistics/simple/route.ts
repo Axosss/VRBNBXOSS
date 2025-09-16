@@ -173,6 +173,15 @@ export async function GET(request: NextRequest) {
           const totalDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) + 1
           return sum + (totalDays > 0 ? (Number(r.total_price) || 0) * (overlapDays / totalDays) : 0)
         }, 0),
+        rent: activeReservations.filter(r => r.platform === 'rent').reduce((sum, r) => {
+          const checkIn = new Date(r.check_in)
+          const checkOut = new Date(r.check_out)
+          const overlapStart = checkIn > periodStart ? checkIn : periodStart
+          const overlapEnd = checkOut < periodEnd ? checkOut : periodEnd
+          const overlapDays = Math.max(0, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+          const totalDays = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          return sum + (totalDays > 0 ? (Number(r.total_price) || 0) * (overlapDays / totalDays) : 0)
+        }, 0),
       }
 
       // Get period-specific data for chart based on selected date range

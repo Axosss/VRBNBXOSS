@@ -27,7 +27,8 @@ import {
   AlertCircle,
   Map,
   Upload,
-  X
+  X,
+  Share2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -58,6 +59,7 @@ export default function ApartmentDetailPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [uploadingFloorPlan, setUploadingFloorPlan] = useState(false)
+  const [shareUrlCopied, setShareUrlCopied] = useState(false)
 
   useEffect(() => {
     if (apartmentId) {
@@ -76,6 +78,13 @@ export default function ApartmentDetailPage() {
     } catch (error) {
       console.error('Failed to delete apartment:', error)
     }
+  }
+
+  const handleShareUrl = () => {
+    const publicUrl = `${window.location.origin}/p/${apartmentId}`
+    navigator.clipboard.writeText(publicUrl)
+    setShareUrlCopied(true)
+    setTimeout(() => setShareUrlCopied(false), 2000)
   }
 
   const handleCopyToClipboard = async (text: string, type: string) => {
@@ -208,6 +217,23 @@ export default function ApartmentDetailPage() {
           <Button variant="outline" onClick={handleEdit} className="gap-2">
             <Edit className="h-4 w-4" />
             Edit
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleShareUrl}
+            className="gap-2"
+          >
+            {shareUrlCopied ? (
+              <>
+                <Check className="h-4 w-4" />
+                Copied!
+              </>
+            ) : (
+              <>
+                <Share2 className="h-4 w-4" />
+                Share
+              </>
+            )}
           </Button>
           <Button 
             variant="destructive" 

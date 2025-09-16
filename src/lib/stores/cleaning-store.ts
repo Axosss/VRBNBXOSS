@@ -45,6 +45,7 @@ interface CleaningState {
   createCleaning: (data: CreateCleaningData) => Promise<Cleaning>;
   updateCleaning: (id: string, data: UpdateCleaningData) => Promise<Cleaning>;
   cancelCleaning: (id: string) => Promise<void>;
+  deleteCleaning: (id: string) => Promise<void>;
   setCleaningFilters: (filters: Partial<CleaningFilters>) => void;
   
   // Cleaner Actions
@@ -242,7 +243,9 @@ export const useCleaningStore = create<CleaningState>()(
         
         try {
           const response = await fetch(`/api/cleanings/${id}`, {
-            method: 'DELETE',
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'cancelled' }),
           });
           
           if (!response.ok) {
@@ -259,6 +262,33 @@ export const useCleaningStore = create<CleaningState>()(
         } catch (error) {
           set({
             error: error instanceof Error ? error.message : 'Failed to cancel cleaning',
+            isLoading: false,
+          });
+          throw error;
+        }
+      },
+      
+      deleteCleaning: async (id: string) => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const response = await fetch(`/api/cleanings/${id}`, {
+            method: 'DELETE',
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete cleaning');
+          }
+          
+          set((state) => ({
+            cleanings: state.cleanings.filter(c => c.id !== id),
+            selectedCleaning: state.selectedCleaning?.id === id ? null : state.selectedCleaning,
+            isLoading: false,
+          }));
+        } catch (error) {
+          set({
+            error: error instanceof Error ? error.message : 'Failed to delete cleaning',
             isLoading: false,
           });
           throw error;

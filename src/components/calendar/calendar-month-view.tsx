@@ -148,15 +148,23 @@ export function CalendarMonthView({
                       top: `${40 + (maxRowOffset + 1) * 36 + 8}px`
                     }}
                   >
-                    {dayCleanings.slice(0, 2).map((cleaning) => (
-                      <div 
-                        key={cleaning.id}
-                        className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full truncate relative z-5"
-                        title={`Cleaning: ${cleaning.apartmentName} - ${cleaning.cleanerName || 'Unassigned'}`}
-                      >
-                        🧹 {cleaning.apartmentName}
-                      </div>
-                    ))}
+                    {dayCleanings.slice(0, 2).map((cleaning) => {
+                      // Extract time from scheduledDate (format: "2024-09-05T10:00:00")
+                      const cleaningTime = new Date(cleaning.scheduledDate).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                      
+                      return (
+                        <div 
+                          key={cleaning.id}
+                          className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full truncate relative z-5"
+                          title={`Ménage: ${cleaning.apartmentName} - ${cleaningTime} - ${cleaning.cleanerName || 'Non assigné'} - Durée: ${cleaning.duration || '2h'}`}
+                        >
+                          🧹 {cleaning.apartmentName}
+                        </div>
+                      )
+                    })}
                     {dayCleanings.length > 2 && (
                       <div className="text-xs text-muted-foreground">
                         +{dayCleanings.length - 2} more

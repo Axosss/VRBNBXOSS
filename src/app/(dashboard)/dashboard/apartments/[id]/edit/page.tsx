@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useApartmentStore } from '@/lib/stores/apartment-store'
 import { ApartmentForm } from '@/components/apartments/apartment-form'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
+import { createClient } from '@/lib/supabase/client'
 import type { ApartmentUpdateInput } from '@/lib/validations'
 
 export default function EditApartmentPage() {
@@ -25,12 +26,90 @@ export default function EditApartmentPage() {
   } = useApartmentStore()
   
   const [updateError, setUpdateError] = useState<string | null>(null)
+  const [icalUrls, setICalUrls] = useState<{ airbnb?: string; vrbo?: string }>({})
+  const supabase = createClient()
 
   useEffect(() => {
     if (apartmentId) {
       fetchApartment(apartmentId)
+      fetchICalUrls(apartmentId)
     }
   }, [apartmentId, fetchApartment])
+
+  const fetchICalUrls = async (apartmentId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('apartment_ical_urls')
+        .select('platform, ical_url')
+        .eq('apartment_id', apartmentId)
+        .eq('is_active', true)
+
+      if (!error && data) {
+        const urls: { airbnb?: string; vrbo?: string } = {}
+        data.forEach(item => {
+          if (item.platform === 'airbnb' || item.platform === 'vrbo') {
+            urls[item.platform] = item.ical_url
+          }
+        })
+        setICalUrls(urls)
+      }
+    } catch (err) {
+      console.error('Error fetching iCal URLs:', err)
+    }
+  }
+
+  const handleICalUrlsChange = async (urls: { airbnb?: string; vrbo?: string }) => {
+    try {
+      // Save Airbnb URL
+      if (urls.airbnb !== undefined) {
+        if (urls.airbnb) {
+          await supabase
+            .from('apartment_ical_urls')
+            .upsert({
+              apartment_id: apartmentId,
+              platform: 'airbnb',
+              ical_url: urls.airbnb,
+              is_active: true
+            }, {
+              onConflict: 'apartment_id,platform'
+            })
+        } else {
+          // Delete if empty
+          await supabase
+            .from('apartment_ical_urls')
+            .delete()
+            .eq('apartment_id', apartmentId)
+            .eq('platform', 'airbnb')
+        }
+      }
+
+      // Save VRBO URL
+      if (urls.vrbo !== undefined) {
+        if (urls.vrbo) {
+          await supabase
+            .from('apartment_ical_urls')
+            .upsert({
+              apartment_id: apartmentId,
+              platform: 'vrbo',
+              ical_url: urls.vrbo,
+              is_active: true
+            }, {
+              onConflict: 'apartment_id,platform'
+            })
+        } else {
+          // Delete if empty
+          await supabase
+            .from('apartment_ical_urls')
+            .delete()
+            .eq('apartment_id', apartmentId)
+            .eq('platform', 'vrbo')
+        }
+      }
+    } catch (err) {
+      console.error('Error saving iCal URLs:', err)
+      throw err
+    }
+  }
 
   const handleSubmit = async (data: ApartmentUpdateInput) => {
     try {
@@ -147,9 +226,11 @@ export default function EditApartmentPage() {
               bathrooms: selectedApartment.bathrooms,
               amenities: selectedApartment.amenities,
               accessCodes: selectedApartment.accessCodes,
+              icalUrls: icalUrls,
             }}
             onSubmit={handleSubmit}
             onCancel={handleCancel}
+            onICalUrlsChange={handleICalUrlsChange}
             isLoading={isUpdating}
             submitLabel="Update Property"
             isEdit={true}
