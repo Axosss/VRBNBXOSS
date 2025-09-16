@@ -48,11 +48,6 @@ export function ReservationCard({
       <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={onView}>
         <CardContent className="p-4">
           <div className="flex gap-4 items-start">
-            {/* Platform indicator */}
-            <div className="flex-shrink-0 pt-1">
-              <PlatformIcon platform={reservation.platform} className="w-4 h-4" />
-            </div>
-            
             {/* Main content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between mb-2">

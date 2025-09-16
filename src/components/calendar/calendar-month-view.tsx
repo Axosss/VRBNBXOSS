@@ -105,7 +105,7 @@ export function CalendarMonthView({
                 className={cn(
                   'bg-background p-2 cursor-pointer hover:bg-accent/50 transition-colors relative',
                   !isCurrentMonth && 'bg-muted/30 text-muted-foreground',
-                  isDayToday && 'bg-primary/5 border-primary'
+                  isDayToday && 'ring-1 ring-primary/30 rounded-lg bg-primary/5'
                 )}
                 style={{ minHeight: `${minHeight}px` }}
                 onClick={() => onDateClick(day.date)}

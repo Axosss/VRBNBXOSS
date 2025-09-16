@@ -27,7 +27,6 @@ export default function ReservationsPage() {
   const router = useRouter()
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [platformFilter, setPlatformFilter] = useState<string>('all')
   const [apartmentFilter, setApartmentFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('created_at')
@@ -62,38 +61,36 @@ export default function ReservationsPage() {
   useEffect(() => {
     const filters: any = {}
     if (searchTerm) filters.search = searchTerm
-    if (statusFilter !== 'all') filters.status = statusFilter
     if (platformFilter !== 'all') filters.platform = platformFilter
     if (apartmentFilter !== 'all') filters.apartmentId = apartmentFilter
     filters.sortBy = sortBy
     filters.sortOrder = sortOrder
     setFilters(filters)
-    
+
     // Reset to page 1 when filters change
     setCurrentPage(1)
-    
+
     // Debounce search
     const timeoutId = setTimeout(() => {
       fetchReservations({ page: 1, limit: itemsPerPage, ...filters })
     }, 300)
-    
+
     return () => clearTimeout(timeoutId)
-  }, [searchTerm, statusFilter, platformFilter, apartmentFilter, sortBy, sortOrder, setFilters, fetchReservations])
+  }, [searchTerm, platformFilter, apartmentFilter, sortBy, sortOrder, setFilters, fetchReservations])
 
   const handlePageChange = (newPage: number) => {
     const filters: any = {}
     if (searchTerm) filters.search = searchTerm
-    if (statusFilter !== 'all') filters.status = statusFilter
     if (platformFilter !== 'all') filters.platform = platformFilter
     if (apartmentFilter !== 'all') filters.apartmentId = apartmentFilter
     filters.sortBy = sortBy
     filters.sortOrder = sortOrder
-    
+
     setCurrentPage(newPage)
-    fetchReservations({ 
-      page: newPage, 
-      limit: itemsPerPage, 
-      ...filters 
+    fetchReservations({
+      page: newPage,
+      limit: itemsPerPage,
+      ...filters
     })
   }
 
@@ -227,22 +224,10 @@ export default function ReservationsPage() {
 
       {/* Stats Cards */}
       {pagination && (
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="w-full max-w-xs">
           <Card className="p-4">
             <div className="text-2xl font-bold text-foreground">{statusCounts.total}</div>
             <div className="text-sm text-muted-foreground">Total Reservations</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-2xl font-bold text-green-600">{statusCounts.confirmed}</div>
-            <div className="text-sm text-muted-foreground">Confirmed</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{statusCounts.checked_in}</div>
-            <div className="text-sm text-muted-foreground">Currently Checked In</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-2xl font-bold text-yellow-600">{statusCounts.pending}</div>
-            <div className="text-sm text-muted-foreground">Pending</div>
           </Card>
         </div>
       )}
@@ -261,20 +246,6 @@ export default function ReservationsPage() {
                 className="pl-9"
               />
             </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="checked_in">Checked In</SelectItem>
-                <SelectItem value="checked_out">Checked Out</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
 
             <Select value={platformFilter} onValueChange={setPlatformFilter}>
               <SelectTrigger className="w-48">
@@ -285,7 +256,6 @@ export default function ReservationsPage() {
                 <SelectItem value="airbnb">Airbnb</SelectItem>
                 <SelectItem value="vrbo">VRBO</SelectItem>
                 <SelectItem value="direct">Direct</SelectItem>
-                <SelectItem value="booking_com">Booking.com</SelectItem>
                 <SelectItem value="rent">Loyer</SelectItem>
               </SelectContent>
             </Select>
