@@ -286,6 +286,7 @@ export default function ReservationsPage() {
                 <SelectItem value="vrbo">VRBO</SelectItem>
                 <SelectItem value="direct">Direct</SelectItem>
                 <SelectItem value="booking_com">Booking.com</SelectItem>
+                <SelectItem value="rent">Loyer</SelectItem>
               </SelectContent>
             </Select>
           </div>

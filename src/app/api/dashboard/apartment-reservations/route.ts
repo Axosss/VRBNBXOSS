@@ -87,6 +87,18 @@ export async function GET(request: NextRequest) {
           daysRemaining = Math.floor(diffTime / (1000 * 60 * 60 * 24))
         }
 
+        // Debug Montaigne issue
+        if (apartment.name && apartment.name.toLowerCase().includes('montaigne')) {
+          console.log('Montaigne Debug:', {
+            apartment: apartment.name,
+            currentReservation: currentReservation ? {
+              id: currentReservation.id,
+              guest_id: currentReservation.guest_id,
+              guest: currentReservation.guest
+            } : null
+          })
+        }
+
         return {
           apartment: dbMappers.apartment.fromDB(apartment),
           currentReservation: currentReservation ? {
