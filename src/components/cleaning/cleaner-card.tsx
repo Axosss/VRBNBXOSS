@@ -69,9 +69,9 @@ export function CleanerCard({
 
   const formatCurrency = (amount: number | null, currency: string) => {
     if (!amount) return null
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: currency
+      currency: 'EUR' // Always force EUR display
     }).format(amount)
   }
 

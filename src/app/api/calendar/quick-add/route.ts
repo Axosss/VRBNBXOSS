@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       total_price: quickReservation.totalPrice,
       cleaning_fee: quickReservation.cleaningFee || 0,
       platform_fee: quickReservation.platformFee || 0,
-      currency: 'USD',
+      currency: 'EUR',
       status: 'confirmed',
       notes: sanitizeText(quickReservation.notes),
       contact_info: sanitizeContactInfo({ name: quickReservation.guestName })

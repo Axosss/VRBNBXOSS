@@ -151,7 +151,7 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
   const formatCurrency = (amount: number, currency: string = 'EUR') => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: currency,
+      currency: 'EUR', // Always force EUR display
     }).format(amount)
   }
 

@@ -80,7 +80,7 @@ export const reservationCreateSchema = z.object({
   totalPrice: z.number().min(0, 'Total price cannot be negative'),
   cleaningFee: z.number().min(0, 'Cleaning fee cannot be negative').optional(),
   platformFee: z.number().min(0, 'Platform fee cannot be negative').optional(),
-  currency: z.string().length(3, 'Currency must be 3 characters').default('USD'),
+  currency: z.string().length(3, 'Currency must be 3 characters').default('EUR'),
   notes: z.string().optional(),
   contactInfo: z.object({}).catchall(z.any()).optional(),
 }).refine(

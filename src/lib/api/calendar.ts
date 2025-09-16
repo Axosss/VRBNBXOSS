@@ -283,7 +283,7 @@ export class CalendarAPI {
         check_out: reservation.checkOut,
         guest_count: reservation.guestCount,
         total_price: reservation.totalPrice,
-        currency: 'USD',
+        currency: 'EUR',
         status: 'confirmed',
         notes: reservation.notes,
         contact_info: { name: reservation.guestName },

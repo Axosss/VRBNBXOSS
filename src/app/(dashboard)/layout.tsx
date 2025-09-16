@@ -32,7 +32,6 @@ const navigation = [
   { name: 'Reservations', href: '/dashboard/reservations', icon: ClipboardList },
   { name: 'Apartments', href: '/dashboard/apartments', icon: Building },
   { name: 'Cleaning', href: '/dashboard/cleaning', icon: Sparkles },
-  { name: 'Cleaners', href: '/dashboard/cleaners', icon: UserCheck },
   { name: 'Guests', href: '/dashboard/guests', icon: Users },
   { name: 'Statistics', href: '/dashboard/statistics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },

@@ -123,7 +123,7 @@ export function formatCurrency(
 ): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency,
+    currency: 'EUR', // Always force EUR display
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
